@@ -1,5 +1,3 @@
-
-
 using System.Data;
 using Npgsql;
 

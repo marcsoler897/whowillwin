@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "whowillwin", "whowillwin.csproj", "{4E782E9B-A629-5D38-E78A-9402D8BE3D7E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4E782E9B-A629-5D38-E78A-9402D8BE3D7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E782E9B-A629-5D38-E78A-9402D8BE3D7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E782E9B-A629-5D38-E78A-9402D8BE3D7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E782E9B-A629-5D38-E78A-9402D8BE3D7E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0800CB5B-A8B6-49F6-8D72-378A70DCE6C4}
+	EndGlobalSection
+EndGlobal

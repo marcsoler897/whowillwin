@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using whowillwin.Services;
-// using whowillwin.Endpoints;
+using whowillwin.Endpoints;
 using Npgsql; 
+using whowillwin.Common;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +27,7 @@ builder.Services.AddScoped<IDatabaseConnection>(sp =>
 
 WebApplication webApp = builder.Build();
 
-// webApp.MapProductEndpoints();
+webApp.MapUserEndpoints();
 
 webApp.Run();
 
