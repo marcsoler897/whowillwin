@@ -4,7 +4,7 @@ using whowillwin.Domain.Entities;
 using whowillwin.Common;
 
 
-namespace whowillwin.Validators;
+namespace whowillwin.Validators.User;
 
 public static class UserValidator
 {
@@ -14,7 +14,7 @@ public static class UserValidator
         {
             return Result.Failure("Username Required","INCORRECT USERNAME");
         }
-        if (userDomain.Name.Count() > 32 )
+        if (userDomain.Name.Count() > UserConstants.MaxUsernameLength )
         {
             return Result.Failure("Max Username Length 32","INCORRECT USERNAME");
         }
@@ -22,7 +22,7 @@ public static class UserValidator
         {
             return Result.Failure("Password Required","INCORRECT PASSWORD");
         }
-        if (userDomain.Password.Length < 8)
+        if (userDomain.Password.Length < UserConstants.MinPasswordLength)
         {
             return Result.Failure("Password Too Short", "SHORT PASSWORD");
         }

@@ -4,7 +4,8 @@ using whowillwin.Domain.Entities;
 using whowillwin.DTO;
 // using System.Security.Cryptography.X509Certificates;
 using whowillwin.Common;
-using whowillwin.Validators;
+using whowillwin.Infrastructure;
+using whowillwin.Validators.User;
 using Microsoft.AspNetCore.Identity;
 
 namespace whowillwin.Endpoints;
@@ -27,7 +28,26 @@ public static class EndpointsUsers
                     message = result.ErrorMessage
                 });
             }
-            UserApp userApp = req.ToUserApp();
+
+
+            
+
+            UserApp userApp;
+            
+            try{
+                userApp = req.ToUserApp();
+            }
+            catch(Exception ex)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "INVALID TEAM",
+                    message = "Invalid Team Guid"
+                });
+            }
+                
+
+
             Result resultApp = UserAppValidator.ValidateTeam(userApp);
             if (!resultApp.IsOk)
             {
@@ -39,6 +59,7 @@ public static class EndpointsUsers
             }
             //entity
             Guid id = Guid.NewGuid();
+            // UserEntity userEntity = UserMapper
 
             return Results.Ok(userApp /* userresponse */);
         });
