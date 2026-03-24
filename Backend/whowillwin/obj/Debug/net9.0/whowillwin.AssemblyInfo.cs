@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("whowillwin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+33d1a4868871cfd95e44f3f1f26f8e448b00aa10")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f456d76fb8999b02e70d0d946abe0dee08b44227")]
 [assembly: System.Reflection.AssemblyProductAttribute("whowillwin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("whowillwin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

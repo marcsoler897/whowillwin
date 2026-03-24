@@ -1,8 +1,15 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using whowillwin.Services;
 using whowillwin.Endpoints;
-using Npgsql; 
-using whowillwin.Common;
+using whowillwin.Repository;
+using whowillwin.Extensions;
+// using Microsoft.OpenApi;
+
+/*
+
+    dotnet add package Swashbuckle.AspNetCore
+
+*/
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -10,24 +17,26 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Configuration
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+Console.WriteLine(builder.Configuration["Database:Provider"]);
+builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddTeamServices(builder.Configuration);
 
-string connStr = builder.Configuration.GetConnectionString("PostgresConnection")!;
-Console.WriteLine($"Postgres connection string: {connStr}");
+// builder.Services.AddScoped<IDatabaseConnection>(sp =>
+//     new DatabaseConnection(
+//         builder.Configuration.GetConnectionString("DefaultConnection")!
+//     )
+// );
 
-using var conn = new Npgsql.NpgsqlConnection(connStr);
-conn.Open();
-Console.WriteLine("Connexió establerta!");
-
-builder.Services.AddScoped<IDatabaseConnection>(sp =>
-    new PostgresConnection(
-        builder.Configuration.GetConnectionString("PostgresConnection")
-    )
-);
-
+builder.Services.AddEndpointsApiExplorer();
 
 WebApplication webApp = builder.Build();
 
+webApp.UseRouting();
+
+Console.WriteLine($"Environment: {webApp.Environment.EnvironmentName}");
+
 webApp.MapUserEndpoints();
+webApp.MapTeamEndpoints();
 
 webApp.Run();
 
