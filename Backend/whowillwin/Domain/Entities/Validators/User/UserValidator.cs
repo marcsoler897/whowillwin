@@ -35,6 +35,7 @@ public static class UserValidator
             return Result.Failure("Weak Password", "WEAK PASSWORD");
         }
         return Result.Ok();
+        //nomeslletres
     }
 
 }

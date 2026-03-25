@@ -19,10 +19,11 @@ public static class EndpointsUsers
     public static void MapUserEndpoints(this WebApplication app)
     {
         //POST /users
-        app.MapPost("/users", (UserRequest req, UserPostgres userPostgres) =>
+        app.MapPost("/users", (UserRequest req, UserPostgres userPostgres, TeamPostgres teamPostgres) =>
         {
 
             UserDomain userDomain = req.ToUserDomain();
+
             Result result = UserValidator.ValidateUser(userDomain);
             if (!result.IsOk)
             {
@@ -57,16 +58,16 @@ public static class EndpointsUsers
                 });
             }
 
-            // Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, teamPostgres);
-            // if (!resultAppADO.IsOk)
-            // {
-            //     return Results.BadRequest(new
-            //     {
-            //         error = resultAppADO.ErrorCode,
-            //         message = resultAppADO.ErrorMessage
-            //     });
-            // }
-            //entity
+            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, teamPostgres);
+            if (!resultAppADO.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = resultAppADO.ErrorCode,
+                    message = resultAppADO.ErrorMessage
+                });
+            }
+            
             Guid id = Guid.NewGuid();
 
             UserEntity userEntity = UserMapper.ToEntity(userApp, id);

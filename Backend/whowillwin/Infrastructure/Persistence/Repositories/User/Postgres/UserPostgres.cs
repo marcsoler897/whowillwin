@@ -15,33 +15,6 @@ public class UserPostgres : IUserRepo
     {
         _db = db;
     }
-
-
-
-    // public List<TeamEntity> GetAll(int limit)
-    // {
-    //     using IDbConnection conn = _db.GetConnection();
-    //     conn.Open();
-    //     string sql = "SELECT COUNT(*) FROM teams WHERE id = @id";
-        
-    //     using IDbCommand cmd = conn.CreateCommand();
-    //     cmd.CommandText = sql;
-
-    //     List<TeamEntity> products = new List<TeamEntity>();
-    //     using IDataReader reader = cmd.ExecuteReader();
-    //     while (reader.Read())
-    //     {
-    //         products.Add(new TeamEntity
-    //         {
-    //             Id = reader.GetGuid(0),
-    //              = reader.GetString(1),
-    //             Name = reader.GetString(2),
-    //             Price = reader.GetDecimal(3)
-    //         });
-    //     }
-
-    //     return products;
-    // }
     public void Insert(UserEntity userEntity)
     {
         using IDbConnection conn = _db.GetConnection();
