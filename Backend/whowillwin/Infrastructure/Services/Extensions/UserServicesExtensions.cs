@@ -5,9 +5,9 @@ using whowillwin.Services;
 
 namespace whowillwin.Extensions;
 
-public static class TeamServicesExtensions
+public static class UserServicesExtensions
 {
-    public static IServiceCollection AddTeamServices(this IServiceCollection services,
+    public static IServiceCollection AddUserServices(this IServiceCollection services,
         IConfiguration config)
     {
         string providerName = config["Database:Provider"]
@@ -25,7 +25,7 @@ public static class TeamServicesExtensions
 
             case DatabaseProvider.Postgres:
 
-                services.AddScoped<ITeamRepo, TeamPostgres>();
+                services.AddScoped<IUserRepo, UserPostgres>();
                 break;
         }
         return services;

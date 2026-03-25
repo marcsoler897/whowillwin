@@ -13,22 +13,40 @@ public class TeamPostgres : ITeamRepo
     {
         _db = db;
     }
+
+    public bool TeamExists(UserApp userApp)
+    {
+        using IDbConnection conn = _db.GetConnection();
+        conn.Open();
+
+        using IDbCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM teams WHERE id = @id";
+
+        var paramId = cmd.CreateParameter();
+        paramId.ParameterName = "@id";
+        paramId.Value = userApp.Prefteam_id;
+        cmd.Parameters.Add(paramId);
+
+        int count = Convert.ToInt32(cmd.ExecuteScalar());
+
+        return count > 0;
+    }    
     public void Insert(TeamEntity teamEntity)
     {
         using IDbConnection conn = _db.GetConnection();
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = $@"INSERT INTO teams (Id, Name)
-                            VALUES (@Id, @Name)";
+        cmd.CommandText = $@"INSERT INTO teams (id, name)
+                            VALUES (@id, @name)";
 
         var paramId = cmd.CreateParameter();
-        paramId.ParameterName = "@Id";
+        paramId.ParameterName = "@id";
         paramId.Value = teamEntity.Id;
         cmd.Parameters.Add(paramId);
 
         var paramName = cmd.CreateParameter();
-        paramName.ParameterName = "@Name";
+        paramName.ParameterName = "@name";
         paramName.Value = teamEntity.Name;
         cmd.Parameters.Add(paramName);
     }
