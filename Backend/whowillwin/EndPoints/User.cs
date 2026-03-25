@@ -19,10 +19,10 @@ public static class EndpointsUsers
     public static void MapUserEndpoints(this WebApplication app)
     {
         //POST /users
-        app.MapPost("/users", (UserRequest req, UserPostgres userPostgres, TeamPostgres teamPostgres) =>
+        app.MapPost("/users", (UserRequest userReq, UserPostgres userPostgres, TeamPostgres teamPostgres) =>
         {
 
-            UserDomain userDomain = req.ToUserDomain();
+            UserDomain userDomain = userReq.ToUserDomain();
 
             Result result = UserValidator.ValidateUser(userDomain);
             if (!result.IsOk)
@@ -37,7 +37,7 @@ public static class EndpointsUsers
             UserApp userApp;
             
             try{
-                userApp = req.ToUserApp();
+                userApp = userReq.ToUserApp();
             }
             catch(Exception)
             {
@@ -67,10 +67,25 @@ public static class EndpointsUsers
                     message = resultAppADO.ErrorMessage
                 });
             }
-            
-            Guid id = Guid.NewGuid();
 
-            UserEntity userEntity = UserMapper.ToEntity(userApp, id);
+            Guid teamId = userApp.Prefteam_id;
+
+            Team team = userReq.ToTeam();
+            TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
+
+            Result resultTeamADO = TeamADOValidator.ValidateTeamADO(teamEntity, teamPostgres);
+            if (!resultTeamADO.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = resultTeamADO.ErrorCode,
+                    message = resultTeamADO.ErrorMessage
+                });
+            }
+            
+            Guid userId = Guid.NewGuid();
+
+            UserEntity userEntity = UserMapper.ToEntity(userApp, userId);
             userPostgres.Insert(userEntity);
 
             return Results.Ok(userApp /* userresponse */);

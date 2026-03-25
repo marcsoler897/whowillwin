@@ -28,4 +28,12 @@ public record UserRequest(string Prefteam_id, string Name, string Password)
             Prefteam_id = guidPrefTeam
         };
     }
+
+    public Team ToTeam()
+    {
+        return new Team
+        {
+            Name = Name
+        };
+    }
 }

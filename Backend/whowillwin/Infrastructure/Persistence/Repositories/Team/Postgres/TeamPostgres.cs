@@ -2,7 +2,6 @@ using System.Data;
 using whowillwin.Domain.Entities;
 using whowillwin.Infrastructure.Persistence.Entities;
 using whowillwin.Services;
-// using whowillwin.Infrastructure.Persistence.Entities;
 
 namespace whowillwin.Repository;
 
@@ -13,23 +12,22 @@ public class TeamPostgres : ITeamRepo
     {
         _db = db;
     }
-    public bool TeamExists(UserApp userApp)
+    public bool TeamExists(TeamEntity teamEntity)
     {
         using IDbConnection conn = _db.GetConnection();
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM whowillwin.users WHERE name = @name";
+        cmd.CommandText = "SELECT EXISTS (SELECT 1 FROM whowillwin.teams WHERE id = @id)";
 
         var paramId = cmd.CreateParameter();
-        paramId.ParameterName = "@name";
-        paramId.Value = userApp.Name;
+        paramId.ParameterName = "@id";
+        paramId.Value = teamEntity.Id;
         cmd.Parameters.Add(paramId);
         
-        long count = Convert.ToInt64(cmd.ExecuteScalar());;
-        conn.Close();
+        bool exists = (bool)cmd.ExecuteScalar();
 
-        return count > 0;
+        return exists;
     }   
 
     public void Insert(TeamEntity teamEntity)
