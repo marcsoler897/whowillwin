@@ -48,7 +48,7 @@ public class UserPostgres : IUserRepo
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = $@"INSERT INTO users (id, prefteam_id, name, password)
+        cmd.CommandText = $@"INSERT INTO whowillwin.users (id, prefteam_id, name, password)
                             VALUES (@id, @prefteam_id, @name, @password)";
 
         var paramId = cmd.CreateParameter();

@@ -37,7 +37,7 @@ public class TeamPostgres : ITeamRepo
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = $@"INSERT INTO teams (id, name)
+        cmd.CommandText = $@"INSERT INTO whowillwin.teams (id, name)
                             VALUES (@id, @name)";
 
         var paramId = cmd.CreateParameter();
@@ -49,5 +49,8 @@ public class TeamPostgres : ITeamRepo
         paramName.ParameterName = "@name";
         paramName.Value = teamEntity.Name;
         cmd.Parameters.Add(paramName);
+
+        int rows = cmd.ExecuteNonQuery();
+        Console.WriteLine($"{rows} fila inserida.");      
     }
 }

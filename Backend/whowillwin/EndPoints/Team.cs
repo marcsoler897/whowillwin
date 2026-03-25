@@ -14,13 +14,13 @@ public static class EndpointsProducts
 {
     public static void MapTeamEndpoints(this WebApplication app)
     {
-        app.MapPost("/teams", (TeamRequest req, ITeamRepo teamADO) =>
+        app.MapPost("/teams", (TeamRequest req, TeamPostgres teamPostgres) =>
         {
         Guid id = Guid.NewGuid();
 
         Team team = req.ToTeam();
         TeamEntity teamEntity = TeamMapper.ToEntity(team, id);
-        teamADO.Insert(teamEntity);
+        teamPostgres.Insert(teamEntity);
 
         return Results.Ok(teamEntity);
         });
