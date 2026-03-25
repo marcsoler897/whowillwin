@@ -19,18 +19,17 @@ public class TeamPostgres : ITeamRepo
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM whowillwin.teams WHERE id = @id";
+        cmd.CommandText = "SELECT COUNT(*) FROM whowillwin.users WHERE name = @name";
 
         var paramId = cmd.CreateParameter();
-        paramId.ParameterName = "@id";
-        paramId.Value = userApp.Prefteam_id;
+        paramId.ParameterName = "@name";
+        paramId.Value = userApp.Name;
         cmd.Parameters.Add(paramId);
         
-        int count = (int)cmd.ExecuteScalar();
-        int countconvert = Convert.ToInt32(count);
+        long count = Convert.ToInt64(cmd.ExecuteScalar());;
         conn.Close();
 
-        return countconvert > 0;
+        return count > 0;
     }   
 
     public void Insert(TeamEntity teamEntity)

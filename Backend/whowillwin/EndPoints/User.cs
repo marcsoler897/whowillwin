@@ -58,7 +58,7 @@ public static class EndpointsUsers
                 });
             }
 
-            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, teamPostgres);
+            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, userPostgres);
             if (!resultAppADO.IsOk)
             {
                 return Results.BadRequest(new

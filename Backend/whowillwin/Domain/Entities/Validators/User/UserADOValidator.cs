@@ -7,9 +7,9 @@ namespace whowillwin.Validators;
 
 public static class UserADOValidator
 {
-    public static Result ValidateUserADO(UserApp userApp, TeamPostgres teamPostgres)
+    public static Result ValidateUserADO(UserApp userApp, UserPostgres userPostgres)
     {
-        if (teamPostgres.TeamExists(userApp))
+        if (userPostgres.UserExists(userApp))
             return Result.Failure("Username Already Exists", "DUPLICATED USERNAME");
 
         return Result.Ok();
