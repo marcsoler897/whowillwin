@@ -12,6 +12,10 @@ public static class UserADOValidator
         if (userPostgres.UserExists(userApp))
             return Result.Failure("Username Already Exists", "DUPLICATED USERNAME");
 
+        if (userPostgres.EmailExists(userApp))
+            return Result.Failure("Email Already Exists", "DUPLICATED EMAIL");
+
         return Result.Ok();
+
     }
 }

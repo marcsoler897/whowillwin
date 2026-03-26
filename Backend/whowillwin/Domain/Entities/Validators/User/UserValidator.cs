@@ -2,6 +2,8 @@
 
 using whowillwin.Domain.Entities;
 using whowillwin.Common;
+using whowillwin.Infrastructure.Persistence.Entities;
+using whowillwin.Repository;
 
 
 namespace whowillwin.Validators.User;
@@ -38,8 +40,12 @@ public static class UserValidator
         {
             return Result.Failure("Weak Password", "WEAK PASSWORD");
         }
+        if (string.IsNullOrEmpty(userDomain.Email))
+        {
+            return Result.Failure("Email is Required", "EMAIL REQUIRED");
+        }
         return Result.Ok();
-        //nomeslletres
+
     }
 
 }

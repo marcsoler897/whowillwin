@@ -16,6 +16,24 @@ public class UserPostgres : IUserRepo
         _db = db;
     }
 
+    public bool EmailExists(UserApp userApp)
+    {
+        using IDbConnection conn = _db.GetConnection();
+        conn.Open();
+
+        using IDbCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM whowillwin.users WHERE email = @email";
+
+        var paramEmail = cmd.CreateParameter();
+        paramEmail.ParameterName = "@email";
+        paramEmail.Value = userApp.Email;
+        cmd.Parameters.Add(paramEmail);
+
+        long count = Convert.ToInt64(cmd.ExecuteScalar());;
+
+        return count > 0;
+    }
+
     public bool UserExists(UserApp userApp)
     {
         using IDbConnection conn = _db.GetConnection();
