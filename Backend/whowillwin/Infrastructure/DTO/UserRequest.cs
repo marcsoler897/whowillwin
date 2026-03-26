@@ -16,17 +16,13 @@ public record UserRequest(string Prefteam_id, string Name, string Password)
 
     public UserApp ToUserApp()
     {
-        if (!Guid.TryParse(Prefteam_id, out Guid guidPrefTeam))
+        if (!Guid.TryParse(Prefteam_id, out Guid prefteam_id))
         {
             throw new Exception("Invalid Prefteam_id");
         }
 
-        return new UserApp
-        {
-            Name = Name,
-            Password = Password,
-            Prefteam_id = guidPrefTeam
-        };
+        return new UserApp(prefteam_id, Name, Password);
+        
     }
 
     public Team ToTeam()
