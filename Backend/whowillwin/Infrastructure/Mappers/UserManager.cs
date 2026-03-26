@@ -11,6 +11,7 @@ public static class UserMapper
          Id = id,
          Prefteam_id = userApp.Prefteam_id,
          Name = userApp.Name,
+         Email = userApp.Email,
          Password = userApp.Password
      };
 
@@ -18,6 +19,7 @@ public static class UserMapper
         => new UserApp(
             userEntity.Prefteam_id,
             userEntity.Name,
+            userEntity.Email,
             userEntity.Password
         );
         

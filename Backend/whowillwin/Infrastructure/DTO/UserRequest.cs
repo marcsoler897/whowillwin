@@ -3,13 +3,14 @@ using whowillwin.Domain.Entities;
 
 namespace whowillwin.DTO;
 
-public record UserRequest(string Prefteam_id, string Name, string Password)
+public record UserRequest(string Prefteam_id, string Name, string Email, string Password)
 {
     public UserDomain ToUserDomain()
     {
         return new UserDomain
         {
             Name = Name,
+            Email = Email,
             Password = Password
         };
     }
@@ -21,8 +22,8 @@ public record UserRequest(string Prefteam_id, string Name, string Password)
             throw new Exception("Invalid Prefteam_id");
         }
 
-        return new UserApp(prefteam_id, Name, Password);
-        
+        return new UserApp(prefteam_id, Name, Email, Password);
+
     }
 
     public Team ToTeam()

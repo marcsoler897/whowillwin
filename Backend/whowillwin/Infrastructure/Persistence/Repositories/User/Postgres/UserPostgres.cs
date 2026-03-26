@@ -40,8 +40,8 @@ public class UserPostgres : IUserRepo
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = $@"INSERT INTO whowillwin.users (id, prefteam_id, name, password)
-                            VALUES (@id, @prefteam_id, @name, @password)";
+        cmd.CommandText = $@"INSERT INTO whowillwin.users (id, prefteam_id, name, email, password)
+                            VALUES (@id, @prefteam_id, @name, @email, @password)";
 
         var paramId = cmd.CreateParameter();
         paramId.ParameterName = "@id";
@@ -58,6 +58,11 @@ public class UserPostgres : IUserRepo
         paramName.Value = userEntity.Name;
         cmd.Parameters.Add(paramName);
 
+        var paramEmail = cmd.CreateParameter();
+        paramEmail.ParameterName = "@email";
+        paramEmail.Value = userEntity.Email;
+        cmd.Parameters.Add(paramEmail);
+
         var paramPassword = cmd.CreateParameter();
         paramPassword.ParameterName = "@password";
         paramPassword.Value = userEntity.Password;
@@ -71,7 +76,7 @@ public class UserPostgres : IUserRepo
     {
         using IDbConnection conn = _db.GetConnection();
         conn.Open();
-        string sql = $"SELECT id, prefteam_id, name, password FROM whowillwin.users LIMIT {limit}";
+        string sql = $"SELECT id, prefteam_id, name, email FROM whowillwin.users LIMIT {limit}";
         
         using IDbCommand cmd = conn.CreateCommand();
         cmd.CommandText = sql;
@@ -85,7 +90,7 @@ public class UserPostgres : IUserRepo
                 Id = reader.GetGuid(0),
                 Prefteam_id = reader.GetGuid(1),
                 Name = reader.GetString(2),
-                Password = reader.GetString(3)
+                Email = reader.GetString(3)
             });
         }
 
