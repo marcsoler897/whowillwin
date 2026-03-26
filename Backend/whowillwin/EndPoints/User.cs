@@ -95,7 +95,7 @@ public static class EndpointsUsers
             UserEntity userEntity = UserMapper.ToEntity(userApp, userId);
             userPostgres.Insert(userEntity);
 
-            return Results.Ok(userApp /* userresponse */);
+            return Results.Created($"/users/{userId}", UserResponse.FromUser(userApp));
         });
     }
 }
