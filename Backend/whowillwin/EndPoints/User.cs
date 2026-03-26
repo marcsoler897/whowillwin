@@ -97,5 +97,20 @@ public static class EndpointsUsers
 
             return Results.Created($"/users/{userId}", UserResponse.FromUser(userApp));
         });
+
+        app.MapGet("/users", (UserPostgres userPostgres,int? total) =>
+        {
+            int limit = total ?? 20; 
+            
+            List<UserEntity>  users = userPostgres.GetAll(limit);
+            List<UserResponse> userResponse = new List<UserResponse>();
+            foreach (UserEntity userEntity in users) 
+            {
+                UserApp userApp = UserMapper.ToDomain(userEntity);
+                userResponse.Add(UserResponse.FromUser(userApp));
+            }
+            
+            return Results.Ok(userResponse);
+        }).WithTags("Users");
     }
 }
