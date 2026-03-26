@@ -22,8 +22,8 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddTeamServices(builder.Configuration);
 builder.Services.AddUserServices(builder.Configuration);
 
-builder.Services.AddScoped<TeamPostgres>();
-builder.Services.AddScoped<UserPostgres>();
+// builder.Services.AddScoped<TeamPostgres>();
+// builder.Services.AddScoped<UserPostgres>();
 
 builder.Services.AddEndpointsApiExplorer();
 

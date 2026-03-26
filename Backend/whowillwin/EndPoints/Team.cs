@@ -14,7 +14,7 @@ public static class EndpointsProducts
 {
     public static void MapTeamEndpoints(this WebApplication app)
     {
-        app.MapPost("/teams", (TeamRequest req, TeamPostgres teamPostgres) =>
+        app.MapPost("/teams", (TeamRequest req, ITeamRepo teamPostgres) =>
         {
         Guid id = Guid.NewGuid();
 

@@ -12,7 +12,7 @@ public class TeamPostgres : ITeamRepo
     {
         _db = db;
     }
-    public bool TeamExists(TeamEntity teamEntity)
+    public bool TeamExists(Guid Id)
     {
         using IDbConnection conn = _db.GetConnection();
         conn.Open();
@@ -22,7 +22,7 @@ public class TeamPostgres : ITeamRepo
 
         var paramId = cmd.CreateParameter();
         paramId.ParameterName = "@id";
-        paramId.Value = teamEntity.Id;
+        paramId.Value = Id;
         cmd.Parameters.Add(paramId);
         
         bool exists = (bool)cmd.ExecuteScalar();

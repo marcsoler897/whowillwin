@@ -7,5 +7,6 @@ namespace whowillwin.Repository;
 
 public interface ITeamRepo
 {
+    bool TeamExists(Guid Id);
     void Insert(TeamEntity teamEntity);
 }

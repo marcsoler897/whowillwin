@@ -79,15 +79,15 @@ public static class EndpointsUsers
             TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
 
 
-            Result resultTeamADO = TeamADOValidator.ValidateTeamADO(teamEntity, teamPostgres);
-            if (!resultTeamADO.IsOk)
-            {
-                return Results.BadRequest(new
-                {
-                    error = resultTeamADO.ErrorCode,
-                    message = resultTeamADO.ErrorMessage
-                });
-            }
+            // Result resultTeamADO = TeamADOValidator.ValidateTeamADO(teamEntity, teamPostgres);
+            // if (!resultTeamADO.IsOk)
+            // {
+            //     return Results.BadRequest(new
+            //     {
+            //         error = resultTeamADO.ErrorCode,
+            //         message = resultTeamADO.ErrorMessage
+            //     });
+            // }
             
             
             Guid userId = Guid.NewGuid();

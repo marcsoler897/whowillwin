@@ -20,15 +20,10 @@ public static class UserValidator
         {
             return Result.Failure("Username Only Letters", "INCORRECT USERNAME");
         }
-        // if (userDomain.Name.Count() > UserConstants.MaxUsernameLength )
-        // {
-        //     return Result.Failure("Max Username Length 32","INCORRECT USERNAME");
-        // }
         if (string.IsNullOrEmpty(userDomain.Password))
         {
             return Result.Failure("Password Required","INCORRECT PASSWORD");
         }
-
         if (string.IsNullOrEmpty(userDomain.Email))
         {
             return Result.Failure("Email is Required", "EMAIL REQUIRED");
