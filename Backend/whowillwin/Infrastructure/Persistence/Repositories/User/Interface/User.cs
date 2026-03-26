@@ -7,5 +7,6 @@ namespace whowillwin.Repository;
 
 public interface IUserRepo
 {
+    List<ProductEntity> GetAll(int limit);
     void Insert(UserEntity userEntity);
 }

@@ -66,4 +66,30 @@ public class UserPostgres : IUserRepo
         int rows = cmd.ExecuteNonQuery();
         Console.WriteLine($"{rows} fila inserida.");       
     }
+
+    public List<UserEntity> GetAll(int limit)
+    {
+        using IDbConnection conn = _db.GetConnection();
+        conn.Open();
+        string sql = $"SELECT id, prefteam_id, name, price FROM users LIMIT {limit}";
+        
+        using IDbCommand cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+
+        List<UserEntity> products = new List<UserEntity>();
+        using IDataReader reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            products.Add(new UserEntity
+            {
+                Id = reader.GetGuid(0),
+                Prefteam_id = reader.GetGuid(1),
+                Name = reader.GetString(2),
+                Password = reader.GetString(3)
+            });
+        }
+
+        return products;
+    }
+
 }
