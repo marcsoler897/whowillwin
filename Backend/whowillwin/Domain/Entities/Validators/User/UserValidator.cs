@@ -20,26 +20,15 @@ public static class UserValidator
         {
             return Result.Failure("Username Only Letters", "INCORRECT USERNAME");
         }
-        if (userDomain.Name.Count() > UserConstants.MaxUsernameLength )
-        {
-            return Result.Failure("Max Username Length 32","INCORRECT USERNAME");
-        }
+        // if (userDomain.Name.Count() > UserConstants.MaxUsernameLength )
+        // {
+        //     return Result.Failure("Max Username Length 32","INCORRECT USERNAME");
+        // }
         if (string.IsNullOrEmpty(userDomain.Password))
         {
             return Result.Failure("Password Required","INCORRECT PASSWORD");
         }
-        if (userDomain.Password.Length < UserConstants.MinPasswordLength)
-        {
-            return Result.Failure("Password Too Short", "SHORT PASSWORD");
-        }
-        bool hasUpper = userDomain.Password.Any(char.IsUpper);
-        bool hasLower = userDomain.Password.Any(char.IsLower);
-        bool hasDigit = userDomain.Password.Any(char.IsDigit);
 
-        if (!hasUpper || !hasLower || !hasDigit)
-        {
-            return Result.Failure("Weak Password", "WEAK PASSWORD");
-        }
         if (string.IsNullOrEmpty(userDomain.Email))
         {
             return Result.Failure("Email is Required", "EMAIL REQUIRED");
