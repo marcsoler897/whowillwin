@@ -95,7 +95,7 @@ public static class EndpointsUsers
             UserEntity userEntity = UserMapper.ToEntity(userApp, userId);
             userPostgres.Insert(userEntity);
 
-            return Results.Created($"/users/{userId}", UserResponse.FromUser(userApp));
+            return Results.Created($"/users/{userId}", UserResponse.FromUser(userApp, userEntity));
         });
 
         app.MapGet("/users", (UserPostgres userPostgres,int? total) =>
@@ -107,7 +107,7 @@ public static class EndpointsUsers
             foreach (UserEntity userEntity in users) 
             {
                 UserApp userApp = UserMapper.ToDomain(userEntity);
-                userResponse.Add(UserResponse.FromUser(userApp));
+                userResponse.Add(UserResponse.FromUser(userApp, userEntity));
             }
             
             return Results.Ok(userResponse);

@@ -71,16 +71,16 @@ public class UserPostgres : IUserRepo
     {
         using IDbConnection conn = _db.GetConnection();
         conn.Open();
-        string sql = $"SELECT id, prefteam_id, name, price FROM users LIMIT {limit}";
+        string sql = $"SELECT id, prefteam_id, name, password FROM whowillwin.users LIMIT {limit}";
         
         using IDbCommand cmd = conn.CreateCommand();
         cmd.CommandText = sql;
 
-        List<UserEntity> products = new List<UserEntity>();
+        List<UserEntity> users = new List<UserEntity>();
         using IDataReader reader = cmd.ExecuteReader();
         while (reader.Read())
         {
-            products.Add(new UserEntity
+            users.Add(new UserEntity
             {
                 Id = reader.GetGuid(0),
                 Prefteam_id = reader.GetGuid(1),
@@ -89,7 +89,7 @@ public class UserPostgres : IUserRepo
             });
         }
 
-        return products;
+        return users;
     }
 
 }

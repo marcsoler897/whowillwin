@@ -13,4 +13,12 @@ public static class UserMapper
          Name = userApp.Name,
          Password = userApp.Password
      };
+
+    public static UserApp ToDomain(UserEntity userEntity)
+        => new UserApp(
+            userEntity.Prefteam_id,
+            userEntity.Name,
+            userEntity.Password
+        );
+        
 }
