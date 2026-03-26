@@ -13,5 +13,6 @@ public static class UserADOValidator
             return Result.Failure("Username Already Exists", "DUPLICATED USERNAME");
 
         return Result.Ok();
+    //repetit llongitud nom validar
     }
 }

@@ -24,6 +24,7 @@ public static class EndpointsUsers
 
             UserDomain userDomain = userReq.ToUserDomain();
 
+
             Result result = UserValidator.ValidateUser(userDomain);
             if (!result.IsOk)
             {
@@ -33,6 +34,7 @@ public static class EndpointsUsers
                     message = result.ErrorMessage
                 });
             }
+
 
             UserApp userApp;
             
@@ -48,6 +50,7 @@ public static class EndpointsUsers
                 });
             }
 
+
             Result resultApp = UserAppValidator.ValidateTeam(userApp);
             if (!resultApp.IsOk)
             {
@@ -57,6 +60,7 @@ public static class EndpointsUsers
                     message = resultApp.ErrorMessage
                 });
             }
+
 
             Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, userPostgres);
             if (!resultAppADO.IsOk)
@@ -68,10 +72,12 @@ public static class EndpointsUsers
                 });
             }
 
+
             Guid teamId = userApp.Prefteam_id;
 
             Team team = userReq.ToTeam();
             TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
+
 
             Result resultTeamADO = TeamADOValidator.ValidateTeamADO(teamEntity, teamPostgres);
             if (!resultTeamADO.IsOk)
@@ -82,6 +88,7 @@ public static class EndpointsUsers
                     message = resultTeamADO.ErrorMessage
                 });
             }
+            
             
             Guid userId = Guid.NewGuid();
 
