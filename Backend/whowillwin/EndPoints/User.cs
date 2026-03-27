@@ -47,6 +47,16 @@ public static class EndpointsUsers
                 });
             }
 
+            Result resultPass = UserValidator.ValidatePassword(userDomain);
+            if (!resultPass.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = resultPass.ErrorCode,
+                    message = resultPass.ErrorMessage
+                });
+            }
+
             string salt = Hash.GenerateSalt();
             string hash = Hash.ComputeHash(req.Password, salt);
 

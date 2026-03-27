@@ -12,7 +12,7 @@ public static class UserMapper
          Prefteam_id = userApp.Prefteam_id,
          Name = userApp.Name,
          Email = userApp.Email,
-         Password = userApp.Password,
+         Hash = userApp.Hash,
          Salt = userApp.Salt
      };
 
@@ -21,7 +21,7 @@ public static class UserMapper
             userEntity.Prefteam_id,
             userEntity.Name,
             userEntity.Email,
-            userEntity.Password,
+            userEntity.Hash,
             userEntity.Salt
         );
         

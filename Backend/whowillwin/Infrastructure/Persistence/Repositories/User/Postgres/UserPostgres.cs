@@ -81,10 +81,10 @@ public class UserPostgres : IUserRepo
         paramEmail.Value = userEntity.Email;
         cmd.Parameters.Add(paramEmail);
 
-        var paramPassword = cmd.CreateParameter();
-        paramPassword.ParameterName = "@password";
-        paramPassword.Value = userEntity.Password;
-        cmd.Parameters.Add(paramPassword);
+        var paramHash = cmd.CreateParameter();
+        paramHash.ParameterName = "@password";
+        paramHash.Value = userEntity.Hash;
+        cmd.Parameters.Add(paramHash);
 
         var paramSalt = cmd.CreateParameter();
         paramSalt.ParameterName = "@salt";
