@@ -19,7 +19,7 @@ public static class EndpointsUsers
     public static void MapUserEndpoints(this WebApplication app)
     {
         //POST /users
-        app.MapPost("/users", (UserRequest userReq, UserPostgres userPostgres, TeamPostgres teamPostgres) =>
+        app.MapPost("/users", (UserRequest userReq, IUserRepo userRepo, ITeamRepo teamRepo) =>
         {
 
             UserDomain userDomain = userReq.ToUserDomain();
@@ -62,7 +62,7 @@ public static class EndpointsUsers
             }
 
 
-            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, userPostgres);
+            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, userRepo);
             if (!resultAppADO.IsOk)
             {
                 return Results.BadRequest(new
@@ -79,7 +79,7 @@ public static class EndpointsUsers
             TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
 
 
-            // Result resultTeamADO = TeamADOValidator.ValidateTeamADO(teamEntity, teamPostgres);
+            // Result resultTeamADO = TeamADOValidator.ValidateTeamADO(teamEntity, teamRepo);
             // if (!resultTeamADO.IsOk)
             // {
             //     return Results.BadRequest(new
@@ -93,16 +93,16 @@ public static class EndpointsUsers
             Guid userId = Guid.NewGuid();
 
             UserEntity userEntity = UserMapper.ToEntity(userApp, userId);
-            userPostgres.Insert(userEntity);
+            userRepo.Insert(userEntity);
 
             return Results.Created($"/users/{userId}", UserResponse.FromUser(userApp, userEntity));
         });
 
-        app.MapGet("/users", (UserPostgres userPostgres,int? total) =>
+        app.MapGet("/users", (IUserRepo userRepo,int? total) =>
         {
             int limit = total ?? 20; 
             
-            List<UserEntity>  users = userPostgres.GetAll(limit);
+            List<UserEntity>  users = userRepo.GetAll(limit);
             List<UserResponse> userResponse = new List<UserResponse>();
             foreach (UserEntity userEntity in users) 
             {

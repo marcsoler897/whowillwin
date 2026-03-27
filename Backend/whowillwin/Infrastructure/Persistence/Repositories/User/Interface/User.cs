@@ -9,4 +9,6 @@ public interface IUserRepo
 {
     List<UserEntity> GetAll(int limit);
     void Insert(UserEntity userEntity);
+    bool UserExists(UserApp userApp);
+    bool EmailExists(UserApp userApp);
 }
