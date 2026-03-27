@@ -19,16 +19,16 @@ public static class EndpointsUsers
     public static void MapUserEndpoints(this WebApplication app)
     {
         
-        // app.MapGet("/jwt", (JswTokenService jwtService) =>
-        // {        
-        //     return Results.Ok(jwtService.GenerateToken(
-        //         userId: "user identification",
-        //         email: "anna@exemple.com",
-        //         issuer: "demo",
-        //         role: "admin",
-        //         audience: "public",    
-        //         lifetime: TimeSpan.FromHours(2)));
-        // }).WithTags("Users");
+        app.MapGet("/jwt", (JswTokenService jwtService) =>
+        {        
+            return Results.Ok(jwtService.GenerateToken(
+                userId: "user identification",
+                email: "anna@exemple.com",
+                issuer: "demo",
+                role: "admin",
+                audience: "public",    
+                lifetime: TimeSpan.FromHours(2)));
+        }).WithTags("Users");
 
         //POST /users
         app.MapPost("/users", (UserRequest req, IUserRepo userRepo, ITeamRepo teamRepo) =>
