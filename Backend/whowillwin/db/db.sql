@@ -1,3 +1,5 @@
+use whowillwin;
+
 CREATE SCHEMA IF NOT EXISTS whowillwin;
 
 CREATE TABLE whowillwin.teams (
@@ -11,9 +13,9 @@ CREATE TABLE whowillwin.users (
     name VARCHAR(32) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    salt VARCHAR(8) NOT NULL,
     CONSTRAINT fk_user_team FOREIGN KEY (prefteam_id)
         REFERENCES whowillwin.teams(id)
 ); 
 
-INSERT INTO teams (id, name)
-VALUES (gen_random_uuid(), 'Random Team');
+DROP TABLE whowillwin.users;

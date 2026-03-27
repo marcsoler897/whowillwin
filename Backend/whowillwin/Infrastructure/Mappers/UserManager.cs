@@ -12,7 +12,8 @@ public static class UserMapper
          Prefteam_id = userApp.Prefteam_id,
          Name = userApp.Name,
          Email = userApp.Email,
-         Password = userApp.Password
+         Password = userApp.Password,
+         Salt = userApp.Salt
      };
 
     public static UserApp ToDomain(UserEntity userEntity)
@@ -20,7 +21,8 @@ public static class UserMapper
             userEntity.Prefteam_id,
             userEntity.Name,
             userEntity.Email,
-            userEntity.Password
+            userEntity.Password,
+            userEntity.Salt
         );
         
 }
