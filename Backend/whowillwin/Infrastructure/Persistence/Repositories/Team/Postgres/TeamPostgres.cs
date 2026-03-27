@@ -12,23 +12,25 @@ public class TeamPostgres : ITeamRepo
     {
         _db = db;
     }
+
     public bool TeamExists(Guid Id)
     {
         using IDbConnection conn = _db.GetConnection();
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT EXISTS (SELECT 1 FROM whowillwin.teams WHERE id = @id)";
+        cmd.CommandText = "SELECT COUNT(*) FROM whowillwin.teams WHERE id = @id";
 
         var paramId = cmd.CreateParameter();
         paramId.ParameterName = "@id";
         paramId.Value = Id;
         cmd.Parameters.Add(paramId);
         
-        bool exists = (bool)cmd.ExecuteScalar();
+        long count = Convert.ToInt64(cmd.ExecuteScalar());;
+        conn.Close();
 
-        return exists;
-    }   
+        return count > 0;
+    } 
 
     public void Insert(TeamEntity teamEntity)
     {

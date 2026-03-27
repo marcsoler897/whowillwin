@@ -62,7 +62,7 @@ public static class EndpointsUsers
             }
 
 
-            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, userRepo);
+            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, userRepo, teamRepo);
             if (!resultAppADO.IsOk)
             {
                 return Results.BadRequest(new
