@@ -27,4 +27,12 @@ public record UserRequest(string Prefteam_id, string Name, string Email, string 
     }
 
 
+    public Team ToTeam()
+    {
+        return new Team
+        {
+            Name = Name
+        };
+    }
+
 }

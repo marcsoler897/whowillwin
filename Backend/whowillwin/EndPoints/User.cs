@@ -19,22 +19,22 @@ public static class EndpointsUsers
     public static void MapUserEndpoints(this WebApplication app)
     {
         
-        app.MapGet("/jwt", (JswTokenService jwtService) =>
-        {        
-            return Results.Ok(jwtService.GenerateToken(
-                userId: "user identification",
-                email: "anna@exemple.com",
-                issuer: "demo",
-                role: "admin",
-                audience: "public",    
-                lifetime: TimeSpan.FromHours(2)));
-        }).WithTags("Users");
+        // app.MapGet("/jwt", (JswTokenService jwtService) =>
+        // {        
+        //     return Results.Ok(jwtService.GenerateToken(
+        //         userId: "user identification",
+        //         email: "anna@exemple.com",
+        //         issuer: "demo",
+        //         role: "admin",
+        //         audience: "public",    
+        //         lifetime: TimeSpan.FromHours(2)));
+        // }).WithTags("Users");
 
         //POST /users
-        app.MapPost("/users", (UserRequest userReq, IUserRepo userRepo, ITeamRepo teamRepo) =>
+        app.MapPost("/users", (UserRequest req, IUserRepo userRepo, ITeamRepo teamRepo) =>
         {
 
-            UserDomain userDomain = userReq.ToUserDomain();
+            UserDomain userDomain = req.ToUserDomain();
 
 
             Result result = UserValidator.ValidateUser(userDomain);
@@ -47,11 +47,13 @@ public static class EndpointsUsers
                 });
             }
 
+            string salt = Hash.GenerateSalt();
+            string hash = Hash.ComputeHash(req.Password, salt);
 
             UserApp userApp;
             
             try{
-                userApp = userReq.ToUserApp();
+                userApp = req.ToUserApp(hash, salt);
             }
             catch(Exception)
             {
@@ -87,7 +89,7 @@ public static class EndpointsUsers
 
             Guid teamId = userApp.Prefteam_id;
 
-            Team team = userReq.ToTeam();
+            Team team = req.ToTeam();
             TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
 
 
@@ -103,7 +105,6 @@ public static class EndpointsUsers
             
             
             Guid userId = Guid.NewGuid();
-
             UserEntity userEntity = UserMapper.ToEntity(userApp, userId);
             userRepo.Insert(userEntity);
 

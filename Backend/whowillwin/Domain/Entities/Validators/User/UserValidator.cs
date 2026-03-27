@@ -29,7 +29,23 @@ public static class UserValidator
             return Result.Failure("Email is Required", "EMAIL REQUIRED");
         }
         return Result.Ok();
+    }
 
+    public static Result ValidatePassword(UserDomain userDomain)
+    {
+        if (userDomain.Password.Length < UserConstants.MinPasswordLength)
+        {
+            return Result.Failure("Password Too Short", "SHORT PASSWORD");
+        }
+        bool hasUpper = userDomain.Password.Any(char.IsUpper);
+        bool hasLower = userDomain.Password.Any(char.IsLower);
+        bool hasDigit = userDomain.Password.Any(char.IsDigit);
+
+        if (!hasUpper || !hasLower || !hasDigit)
+        {
+            return Result.Failure("Weak Password", "WEAK PASSWORD");
+        }
+        return Result.Ok();
     }
 
 }

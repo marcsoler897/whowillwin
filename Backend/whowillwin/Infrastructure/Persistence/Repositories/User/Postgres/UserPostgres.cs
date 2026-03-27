@@ -58,8 +58,8 @@ public class UserPostgres : IUserRepo
         conn.Open();
 
         using IDbCommand cmd = conn.CreateCommand();
-        cmd.CommandText = $@"INSERT INTO whowillwin.users (id, prefteam_id, name, email, password)
-                            VALUES (@id, @prefteam_id, @name, @email, @password)";
+        cmd.CommandText = $@"INSERT INTO whowillwin.users (id, prefteam_id, name, email, password, salt)
+                            VALUES (@id, @prefteam_id, @name, @email, @password, @salt)";
 
         var paramId = cmd.CreateParameter();
         paramId.ParameterName = "@id";
@@ -85,6 +85,11 @@ public class UserPostgres : IUserRepo
         paramPassword.ParameterName = "@password";
         paramPassword.Value = userEntity.Password;
         cmd.Parameters.Add(paramPassword);
+
+        var paramSalt = cmd.CreateParameter();
+        paramSalt.ParameterName = "@salt";
+        paramSalt.Value = userEntity.Salt;
+        cmd.Parameters.Add(paramSalt);
 
         int rows = cmd.ExecuteNonQuery();
         Console.WriteLine($"{rows} fila inserida.");       

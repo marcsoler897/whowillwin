@@ -17,21 +17,4 @@ public static class UserAppValidator
         return Result.Ok();
     }
 
-    public static Result ValidatePassword(UserApp userApp)
-    {
-        if (userApp.Password.Length < UserConstants.MinPasswordLength)
-        {
-            return Result.Failure("Password Too Short", "SHORT PASSWORD");
-        }
-        bool hasUpper = userApp.Password.Any(char.IsUpper);
-        bool hasLower = userApp.Password.Any(char.IsLower);
-        bool hasDigit = userApp.Password.Any(char.IsDigit);
-
-        if (!hasUpper || !hasLower || !hasDigit)
-        {
-            return Result.Failure("Weak Password", "WEAK PASSWORD");
-        }
-        return Result.Ok();
-    }
-
 }
