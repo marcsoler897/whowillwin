@@ -19,7 +19,7 @@ public class JswTokenService
         string userId,
         string email,
         string issuer,
-        string role,
+        List<string> roles,
         string audience,
         TimeSpan lifetime)
     {
@@ -37,7 +37,7 @@ public class JswTokenService
 
             new Claim(ClaimTypes.NameIdentifier, userId),
             new Claim(ClaimTypes.Name, email),
-            new Claim(ClaimTypes.Role, role)
+            // new Claim(ClaimTypes.Role, role)
         };
 
         DateTime now = DateTime.UtcNow;

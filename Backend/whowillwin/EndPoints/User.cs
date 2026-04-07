@@ -11,6 +11,8 @@ using whowillwin.Validators;
 using whowillwin.Repository;
 using whowillwin.Infrastructure.Mappers;
 using whowillwin.Infrastructure.Persistence.Entities;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 
 namespace whowillwin.Endpoints;
 
@@ -19,41 +21,59 @@ public static class EndpointsUsers
     public static void MapUserEndpoints(this WebApplication app)
     {
         
+        app.MapPost("/login", (LoginRequest loginReq, IJWTRepo iJwtRepo, JswTokenService jwtService) =>
+        {        
+
+            UserJWTResponse? user = iJwtRepo.GetByLogin(loginReq.Login);
+
+            if (user == null)
+                return Results.Unauthorized();
+
+            string token = jwtService.GenerateToken(
+                userId: user.Id.ToString(),
+                email: user.Email,
+                issuer: "whowillwin",
+                roles: user.Roles,
+                audience: "public",
+                lifetime: TimeSpan.FromHours(2)
+            );
+
+            return Results.Ok(new { token, user });
+        });
+
         app.MapGet("/jwt", (JswTokenService jwtService) =>
         {        
             return Results.Ok(jwtService.GenerateToken(
                 userId: "user identification",
                 email: "anna@exemple.com",
                 issuer: "demo",
-                role: "admin",
+                roles: new List<string> { "admin" },
                 audience: "public",    
                 lifetime: TimeSpan.FromHours(2)));
         }).WithTags("Users");
 
         //POST /users
-        app.MapPost("/users", (UserRequest req, IUserRepo userRepo, ITeamRepo teamRepo) =>
+        app.MapPost("/users", (ClaimsPrincipal user, UserRequest req, IUserRepo userRepo, ITeamRepo teamRepo) =>
         {
+
+
+            // bool isAdmin = user.Claims.Any(c =>
+            //     c.Type == ClaimTypes.Role && c.Value == "admin");
+
+            // if (!isAdmin)
+            //     return Results.Forbid();
 
             UserDomain userDomain = req.ToUserDomain();
 
 
             Result result = UserValidator.ValidateUser(userDomain);
+            result = UserValidator.ValidatePassword(userDomain);
             if (!result.IsOk)
             {
                 return Results.BadRequest(new
                 {
                     error = result.ErrorCode,
                     message = result.ErrorMessage
-                });
-            }
-
-            Result resultPass = UserValidator.ValidatePassword(userDomain);
-            if (!resultPass.IsOk)
-            {
-                return Results.BadRequest(new
-                {
-                    error = resultPass.ErrorCode,
-                    message = resultPass.ErrorMessage
                 });
             }
 
@@ -101,24 +121,12 @@ public static class EndpointsUsers
 
             Team team = req.ToTeam();
             TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
-
-
-            // Result resultTeamADO = TeamADOValidator.ValidateTeamADO(teamEntity, teamRepo);
-            // if (!resultTeamADO.IsOk)
-            // {
-            //     return Results.BadRequest(new
-            //     {
-            //         error = resultTeamADO.ErrorCode,
-            //         message = resultTeamADO.ErrorMessage
-            //     });
-            // }
-            
             
             Guid userId = Guid.NewGuid();
             UserEntity userEntity = UserMapper.ToEntity(userApp, userId);
             userRepo.Insert(userEntity);
 
-            return Results.Created($"/users/{userId}", UserResponse.FromUser(userApp, userEntity));
+            return Results.Created($"/users/{userId}", UserResponse.FromUser(userEntity));
         });
 
         app.MapGet("/users", (IUserRepo userRepo,int? total) =>
@@ -130,10 +138,12 @@ public static class EndpointsUsers
             foreach (UserEntity userEntity in users) 
             {
                 UserApp userApp = UserMapper.ToDomain(userEntity);
-                userResponse.Add(UserResponse.FromUser(userApp, userEntity));
+                userResponse.Add(UserResponse.FromUser(userEntity));
             }
             
             return Results.Ok(userResponse);
         }).WithTags("Users");
     }
+    public record TokenRequest(string Token);
+
 }

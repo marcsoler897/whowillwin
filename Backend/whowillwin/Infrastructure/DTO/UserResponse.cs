@@ -9,8 +9,8 @@ public record UserResponse(Guid Id, Guid Prefteam_id, string Name, string Email)
 {
     // Guanyem CONTROL sobre com es fa la conversió
 
-    public static UserResponse FromUser(UserApp userApp, UserEntity userEntity)   // Conversió d'entitat a response
+    public static UserResponse FromUser(UserEntity userEntity)   // Conversió d'entitat a response
     {
-        return new UserResponse(userEntity.Id, userApp.Prefteam_id, userApp.Name, userApp.Email);
+        return new UserResponse(userEntity.Id, userEntity.Prefteam_id, userEntity.Name, userEntity.Email);
     }
 }

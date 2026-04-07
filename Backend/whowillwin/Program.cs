@@ -7,6 +7,7 @@ using whowillwin.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.Identity.Data;
 // using Microsoft.OpenApi;
 
 /*
@@ -26,6 +27,9 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddScoped<JswTokenService>();
 builder.Services.AddTeamServices(builder.Configuration);
 builder.Services.AddUserServices(builder.Configuration);
+builder.Services.AddScoped<IJWTRepo, JWTPostgres>();
+builder.Services.AddEndpointsApiExplorer();
+
 
 
 builder.Services
@@ -41,7 +45,7 @@ builder.Services
                 ),
 
             ValidateIssuer = true,
-            ValidIssuer = "demo",
+            ValidIssuer = "whowillwin",
 
             ValidateAudience = true,
             ValidAudience = "public",
@@ -52,8 +56,6 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-
-builder.Services.AddEndpointsApiExplorer();
 
 WebApplication webApp = builder.Build();
 
