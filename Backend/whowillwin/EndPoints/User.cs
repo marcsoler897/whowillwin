@@ -20,6 +20,81 @@ public static class EndpointsUsers
 {
     public static void MapUserEndpoints(this WebApplication app)
     {
+
+        app.MapPost("/register", (UserRequest req, IJWTRepo iJwtRepo, JswTokenService jwtService, IUserRepo userRepo, ITeamRepo teamRepo) =>
+        {        
+
+           UserDomain userDomain = req.ToUserDomain();
+
+            Result result = UserValidator.ValidateUser(userDomain);
+            result = UserValidator.ValidatePassword(userDomain);
+            if (!result.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = result.ErrorCode,
+                    message = result.ErrorMessage
+                });
+            }
+
+            string salt = Hash.GenerateSalt();
+            string hash = Hash.ComputeHash(req.Password, salt);
+
+            UserApp userApp;
+            
+            try{
+                userApp = req.ToUserApp(hash, salt);
+            }
+            catch(Exception)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "INVALID TEAM",
+                    message = "Invalid Team Guid"
+                });
+            }
+
+            Result resultApp = UserAppValidator.ValidateTeam(userApp);
+            if (!resultApp.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = resultApp.ErrorCode,
+                    message = resultApp.ErrorMessage
+                });
+            }
+
+            Result resultAppADO = UserADOValidator.ValidateUserADO(userApp, userRepo, teamRepo);
+            if (!resultAppADO.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = resultAppADO.ErrorCode,
+                    message = resultAppADO.ErrorMessage
+                });
+            }
+
+            Guid teamId = userApp.Prefteam_id;
+
+            Team team = req.ToTeam();
+            TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
+            
+            Guid userId = Guid.NewGuid();
+            UserEntity userEntity = UserMapper.ToEntity(userApp, userId);
+            userRepo.Insert(userEntity);
+
+            string token = jwtService.GenerateToken(
+                userId: userId.ToString(),
+                email: userEntity.Email,
+                issuer: "whowillwin",
+                roles: new List<string> { "User" },
+                audience: "public",
+                lifetime: TimeSpan.FromHours(2)
+            );
+
+            return Results.Created($"/users/{userId}", new { token, user = UserResponse.FromUser(userEntity) });
+
+        });
         
         app.MapPost("/login", (LoginRequest loginReq, IJWTRepo iJwtRepo, JswTokenService jwtService) =>
         {        
