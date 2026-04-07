@@ -57,14 +57,13 @@ public static class EndpointsUsers
         {
 
 
-            // bool isAdmin = user.Claims.Any(c =>
-            //     c.Type == ClaimTypes.Role && c.Value == "admin");
+            bool isAdmin = user.Claims.Any(c =>
+                c.Type == ClaimTypes.Role && c.Value == "Admin");
 
-            // if (!isAdmin)
-            //     return Results.Forbid();
+            if (!isAdmin)
+                return Results.Forbid();
 
             UserDomain userDomain = req.ToUserDomain();
-
 
             Result result = UserValidator.ValidateUser(userDomain);
             result = UserValidator.ValidatePassword(userDomain);

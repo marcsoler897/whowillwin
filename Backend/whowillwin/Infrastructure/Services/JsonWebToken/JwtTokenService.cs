@@ -40,6 +40,11 @@ public class JswTokenService
             // new Claim(ClaimTypes.Role, role)
         };
 
+        foreach (string role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
         DateTime now = DateTime.UtcNow;
 
         JwtSecurityToken token = new JwtSecurityToken(
