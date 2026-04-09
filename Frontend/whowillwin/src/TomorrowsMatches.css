@@ -1,0 +1,58 @@
+.tm-section {
+  width: 100%;
+  max-width: 860px;
+  margin-top: 48px;
+}
+
+.tm-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+
+.tm-empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+}
+
+.tm-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 12px 20px;
+}
+
+.tm-team {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.tm-team:last-of-type {
+  text-align: right;
+}
+
+.tm-vs {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+
+.tm-time {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  min-width: 42px;
+  text-align: right;
+}

@@ -24,16 +24,25 @@ public static class EndpointsUsers
         app.MapPost("/register", (UserRequest req, IJWTRepo iJwtRepo, JswTokenService jwtService, IUserRepo userRepo, ITeamRepo teamRepo) =>
         {        
 
-           UserDomain userDomain = req.ToUserDomain();
+            UserDomain userDomain = req.ToUserDomain();
 
             Result result = UserValidator.ValidateUser(userDomain);
-            result = UserValidator.ValidatePassword(userDomain);
             if (!result.IsOk)
             {
                 return Results.BadRequest(new
                 {
                     error = result.ErrorCode,
                     message = result.ErrorMessage
+                });
+            }
+
+           Result resultPass = UserValidator.ValidatePassword(userDomain);
+           if (!resultPass.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = resultPass.ErrorCode,
+                    message = resultPass.ErrorMessage
                 });
             }
 
@@ -141,13 +150,22 @@ public static class EndpointsUsers
             UserDomain userDomain = req.ToUserDomain();
 
             Result result = UserValidator.ValidateUser(userDomain);
-            result = UserValidator.ValidatePassword(userDomain);
             if (!result.IsOk)
             {
                 return Results.BadRequest(new
                 {
                     error = result.ErrorCode,
                     message = result.ErrorMessage
+                });
+            }
+
+           Result resultPass = UserValidator.ValidatePassword(userDomain);
+           if (!resultPass.IsOk)
+            {
+                return Results.BadRequest(new
+                {
+                    error = resultPass.ErrorCode,
+                    message = resultPass.ErrorMessage
                 });
             }
 

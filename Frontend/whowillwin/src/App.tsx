@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import Register from './Register'
+import TomorrowsMatches from './TomorrowsMatches'
 
 function App() {
   const [page, setPage] = useState<'home' | 'register'>('home')
@@ -51,6 +52,8 @@ function App() {
             <p className="injured">INJURED PLAYERS</p>
           </div>
         </div>
+
+        <TomorrowsMatches />
       </main>
     </div>
   )
