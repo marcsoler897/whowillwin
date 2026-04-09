@@ -28,9 +28,8 @@ builder.Services.AddScoped<JswTokenService>();
 builder.Services.AddTeamServices(builder.Configuration);
 builder.Services.AddUserServices(builder.Configuration);
 builder.Services.AddScoped<IJWTRepo, JWTPostgres>();
+builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
-
-
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -57,9 +56,18 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("frontend", policy =>
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
 WebApplication webApp = builder.Build();
 
 webApp.UseRouting();
+webApp.UseCors("frontend");
 
 Console.WriteLine($"Environment: {webApp.Environment.EnvironmentName}");
 
@@ -72,6 +80,7 @@ webApp.UseAuthorization();
 
 webApp.MapUserEndpoints();
 webApp.MapTeamEndpoints();
+webApp.MapSeasonEndpoints();
 
 webApp.Run();
 

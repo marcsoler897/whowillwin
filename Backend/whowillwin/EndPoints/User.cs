@@ -168,7 +168,6 @@ public static class EndpointsUsers
                 });
             }
 
-
             Result resultApp = UserAppValidator.ValidateTeam(userApp);
             if (!resultApp.IsOk)
             {
