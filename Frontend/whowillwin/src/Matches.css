@@ -34,6 +34,41 @@
   color: #fff;
 }
 
+.tm-matchdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.tm-day-btn {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tm-day-future {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.tm-day-past {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.tm-day-active {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
 .tm-empty {
   color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
