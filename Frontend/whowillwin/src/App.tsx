@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import Register from './Register'
-import TomorrowsMatches from './TomorrowsMatches'
+import Matches from './Matches'
 
 function App() {
   const [page, setPage] = useState<'home' | 'register'>('home')
@@ -53,7 +53,7 @@ function App() {
           </div>
         </div>
 
-        <TomorrowsMatches />
+        <Matches />
       </main>
     </div>
   )

@@ -81,6 +81,7 @@ webApp.UseAuthorization();
 webApp.MapUserEndpoints();
 webApp.MapTeamEndpoints();
 webApp.MapSeasonEndpoints();
+webApp.MapApiFootballEndpoints();
 
 webApp.Run();
 
