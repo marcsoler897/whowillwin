@@ -2,10 +2,10 @@ import { useState } from 'react'
 import './Register.css'
 
 interface RegisterProps {
-  onBack: () => void
+  onGoToLogin: () => void
 }
 
-export default function Register({ onBack }: RegisterProps) {
+export default function Register({ onGoToLogin }: RegisterProps) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,7 +37,7 @@ export default function Register({ onBack }: RegisterProps) {
       const data = await res.json()
       console.log('Registered:', data)
       alert('Registered successfully!')
-      onBack()
+      onGoToLogin()
     } catch {
       setError('Could not connect to server')
     } finally {
@@ -96,7 +96,7 @@ export default function Register({ onBack }: RegisterProps) {
           {loading ? 'Registering...' : 'Register'}
         </button>
 
-        <button className="register-link" onClick={onBack}>
+        <button className="register-link" onClick={onGoToLogin}>
           Already have an account
         </button>
       </div>

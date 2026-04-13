@@ -28,6 +28,10 @@ public static class UserValidator
         {
             return Result.Failure("Email is Required", "EMAIL REQUIRED");
         }
+        if (!userDomain.Email.Contains('@'))
+        {
+            return Result.Failure("Email must contain @", "INVALID EMAIL");
+        }
         return Result.Ok();
     }
 

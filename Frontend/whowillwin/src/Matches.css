@@ -34,6 +34,63 @@
   color: #fff;
 }
 
+.season-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.season-label-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.match-date-inline {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.match-score {
+  font-size: 32px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -1px;
+}
+
+.match-time {
+  font-size: 22px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.match-other-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.match-other-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.match-other-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
 .tm-matchdays {
   display: flex;
   flex-wrap: wrap;

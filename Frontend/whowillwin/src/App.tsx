@@ -1,13 +1,18 @@
 import { useState } from 'react'
 import './App.css'
 import Register from './Register'
+import Login from './Login'
 import Matches from './Matches'
 
 function App() {
-  const [page, setPage] = useState<'home' | 'register'>('home')
+  const [page, setPage] = useState<'home' | 'register' | 'login'>('home')
 
   if (page === 'register') {
-    return <Register onBack={() => setPage('home')} />
+    return <Register onGoToLogin={() => setPage('login')} />
+  }
+
+  if (page === 'login') {
+    return <Login onGoToRegister={() => setPage('register')} onLoginSuccess={() => setPage('home')} />
   }
 
   return (
@@ -22,37 +27,12 @@ function App() {
         <ul className="nav-links">
           <li><a href="#" className="active">Home</a></li>
           <li><a href="#">Record</a></li>
-          <li><a href="#">Login</a></li>
+          <li><a href="#" onClick={e => { e.preventDefault(); setPage('login') }}>Login</a></li>
           <li><a href="#" onClick={e => { e.preventDefault(); setPage('register') }}>Register</a></li>
         </ul>
       </nav>
 
       <main className="main-content">
-        <p className="match-date">23/03/2026</p>
-        <h1 className="match-title">Match Predictor</h1>
-        <p className="season-label">Season x</p>
-
-        <div className="match-grid">
-          <div className="team-col team-left">
-            <h2 className="team-name">Team A</h2>
-            <p className="player">PLAYERS</p>
-            <p className="player">PLAYERS</p>
-            <p className="injured">INJURED PLAYERS</p>
-          </div>
-
-          <div className="match-center">
-            <p className="match-option">Match Prefered Team vs next team</p>
-            <p className="match-option">B. See other matches</p>
-          </div>
-
-          <div className="team-col team-right">
-            <h2 className="team-name">Team B</h2>
-            <p className="player">PLAYERS</p>
-            <p className="player">PLAYERS</p>
-            <p className="injured">INJURED PLAYERS</p>
-          </div>
-        </div>
-
         <Matches />
       </main>
     </div>
