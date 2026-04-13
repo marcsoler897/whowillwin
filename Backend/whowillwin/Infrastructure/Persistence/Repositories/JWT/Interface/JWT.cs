@@ -9,4 +9,5 @@ namespace whowillwin.Repository;
 public interface IJWTRepo
 {
     UserJWTResponse? GetByLogin(string login);
+    bool ValidateLogin(string login, string password);
 }

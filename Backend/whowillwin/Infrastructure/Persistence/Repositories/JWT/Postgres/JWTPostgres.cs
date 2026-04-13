@@ -1,5 +1,6 @@
 using whowillwin.Services;
 using whowillwin.DTO;
+using whowillwin.Common;
 using System.Data;
 
 namespace whowillwin.Repository;
@@ -55,5 +56,29 @@ public class JWTPostgres : IJWTRepo
         }
 
         return user;
+    }
+
+    public bool ValidateLogin(string login, string password)
+    {
+        using IDbConnection conn = _db.GetConnection();
+        conn.Open();
+
+        using IDbCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT u.password, u.salt FROM whowillwin.users u WHERE u.email = @login OR u.name = @login";
+
+        var paramLogin = cmd.CreateParameter();
+        paramLogin.ParameterName = "@login";
+        paramLogin.Value = login;
+        cmd.Parameters.Add(paramLogin);
+
+        using IDataReader reader = cmd.ExecuteReader();
+
+        if (!reader.Read())
+            return false;
+
+        string storedHash = reader.GetString(0);
+        string salt = reader.GetString(1);
+
+        return Hash.ComputeHash(password, salt) == storedHash;
     }
 }

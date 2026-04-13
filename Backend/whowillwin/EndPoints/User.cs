@@ -13,6 +13,7 @@ using whowillwin.Infrastructure.Mappers;
 using whowillwin.Infrastructure.Persistence.Entities;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
+using whowillwin.Validators.Login;
 
 namespace whowillwin.Endpoints;
 
@@ -106,12 +107,17 @@ public static class EndpointsUsers
         });
         
         app.MapPost("/login", (LoginRequest loginReq, IJWTRepo iJwtRepo, JswTokenService jwtService) =>
-        {        
+        {
+
+            Result resultLogin = LoginADOValidator.ValidateLogin(loginReq, iJwtRepo);
+            if (!resultLogin.IsOk)
+                return Results.BadRequest(new
+                {
+                    error = resultLogin.ErrorCode,
+                    message = resultLogin.ErrorMessage
+                });
 
             UserJWTResponse? user = iJwtRepo.GetByLogin(loginReq.Login);
-
-            if (user == null)
-                return Results.Unauthorized();
 
             string token = jwtService.GenerateToken(
                 userId: user.Id.ToString(),
@@ -122,19 +128,19 @@ public static class EndpointsUsers
                 lifetime: TimeSpan.FromHours(2)
             );
 
-            return Results.Ok(new { token, user });
+            return Results.Ok(new { token });
         });
 
-        app.MapGet("/jwt", (JswTokenService jwtService) =>
-        {        
-            return Results.Ok(jwtService.GenerateToken(
-                userId: "user identification",
-                email: "anna@exemple.com",
-                issuer: "demo",
-                roles: new List<string> { "admin" },
-                audience: "public",    
-                lifetime: TimeSpan.FromHours(2)));
-        }).WithTags("Users");
+        // app.MapGet("/jwt", (JswTokenService jwtService) =>
+        // {
+        //     return Results.Ok(jwtService.GenerateToken(
+        //         userId: "user identification",
+        //         email: "anna@exemple.com",
+        //         issuer: "demo",
+        //         roles: new List<string> { "admin" },
+        //         audience: "public",
+        //         lifetime: TimeSpan.FromHours(2)));
+        // }).WithTags("Users");
 
         //POST /users
         app.MapPost("/users", (ClaimsPrincipal user, UserRequest req, IUserRepo userRepo, ITeamRepo teamRepo) =>
@@ -220,8 +226,15 @@ public static class EndpointsUsers
             return Results.Created($"/users/{userId}", UserResponse.FromUser(userEntity));
         });
 
-        app.MapGet("/users", (IUserRepo userRepo,int? total) =>
+        app.MapGet("/users", (ClaimsPrincipal user, IUserRepo userRepo,int? total) =>
         {
+
+            bool isAdmin = user.Claims.Any(c =>
+                c.Type == ClaimTypes.Role && c.Value == "Admin");
+
+            if (!isAdmin)
+                return Results.Forbid();
+
             int limit = total ?? 20; 
             
             List<UserEntity>  users = userRepo.GetAll(limit);
