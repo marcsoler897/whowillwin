@@ -21,7 +21,7 @@ public static class EndpointsUsers
     public static void MapUserEndpoints(this WebApplication app)
     {
 
-        app.MapPost("/register", (UserRequest req, IJWTRepo iJwtRepo, JswTokenService jwtService, IUserRepo userRepo, ITeamRepo teamRepo) =>
+        app.MapPost("/register", (UserRequest req, JswTokenService jwtService, IUserRepo userRepo, ITeamRepo teamRepo) =>
         {        
 
             UserDomain userDomain = req.ToUserDomain();
@@ -159,13 +159,13 @@ public static class EndpointsUsers
                 });
             }
 
-           Result resultPass = UserValidator.ValidatePassword(userDomain);
-           if (!resultPass.IsOk)
+           Result resultPassword = UserValidator.ValidatePassword(userDomain);
+           if (!resultPassword.IsOk)
             {
                 return Results.BadRequest(new
                 {
-                    error = resultPass.ErrorCode,
-                    message = resultPass.ErrorMessage
+                    error = resultPassword.ErrorCode,
+                    message = resultPassword.ErrorMessage
                 });
             }
 

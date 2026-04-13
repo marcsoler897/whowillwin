@@ -92,7 +92,28 @@ public class UserPostgres : IUserRepo
         cmd.Parameters.Add(paramSalt);
 
         int rows = cmd.ExecuteNonQuery();
-        Console.WriteLine($"{rows} fila inserida.");       
+        Console.WriteLine($"{rows} fila inserida.");
+
+        using IDbCommand roleCmd = conn.CreateCommand();
+        roleCmd.CommandText = @"INSERT INTO whowillwin.userroles (id, user_id, role_id)
+                                VALUES (@id, @user_id, @role_id)";
+
+        var paramUrId = roleCmd.CreateParameter();
+        paramUrId.ParameterName = "@id";
+        paramUrId.Value = Guid.NewGuid();
+        roleCmd.Parameters.Add(paramUrId);
+
+        var paramUserId = roleCmd.CreateParameter();
+        paramUserId.ParameterName = "@user_id";
+        paramUserId.Value = userEntity.Id;
+        roleCmd.Parameters.Add(paramUserId);
+
+        var paramRoleId = roleCmd.CreateParameter();
+        paramRoleId.ParameterName = "@role_id";
+        paramRoleId.Value = new Guid("22222222-2222-2222-2222-222222222222");
+        roleCmd.Parameters.Add(paramRoleId);
+
+        roleCmd.ExecuteNonQuery();
     }
 
     public List<UserEntity> GetAll(int limit)
