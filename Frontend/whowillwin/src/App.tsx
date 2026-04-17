@@ -3,16 +3,32 @@ import './App.css'
 import Register from './Register'
 import Login from './Login'
 import Matches from './Matches'
+import { isTokenValid, logout } from './services/authService'
+
+type Page = 'home' | 'register' | 'login'
 
 function App() {
-  const [page, setPage] = useState<'home' | 'register' | 'login'>('home')
+  const [page, setPage] = useState<Page>(() => isTokenValid() ? 'home' : 'login')
+
+  function navigate(target: Page) {
+    if ((target === 'login' || target === 'register') && isTokenValid()) {
+      setPage('home')
+      return
+    }
+    setPage(target)
+  }
+
+  function handleLogout() {
+    logout()
+    setPage('login')
+  }
 
   if (page === 'register') {
-    return <Register onGoToLogin={() => setPage('login')} />
+    return <Register onGoToLogin={() => navigate('login')} />
   }
 
   if (page === 'login') {
-    return <Login onGoToRegister={() => setPage('register')} onLoginSuccess={() => setPage('home')} />
+    return <Login onGoToRegister={() => navigate('register')} onLoginSuccess={() => setPage('home')} />
   }
 
   return (
@@ -27,8 +43,9 @@ function App() {
         <ul className="nav-links">
           <li><a href="#" className="active">Home</a></li>
           <li><a href="#">Record</a></li>
-          <li><a href="#" onClick={e => { e.preventDefault(); setPage('login') }}>Login</a></li>
-          <li><a href="#" onClick={e => { e.preventDefault(); setPage('register') }}>Register</a></li>
+          <li>
+            <a href="#" onClick={e => { e.preventDefault(); handleLogout() }}>Logout</a>
+          </li>
         </ul>
       </nav>
 

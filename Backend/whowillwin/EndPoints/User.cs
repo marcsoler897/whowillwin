@@ -37,8 +37,8 @@ public static class EndpointsUsers
                 });
             }
 
-           Result resultPass = UserValidator.ValidatePassword(userDomain);
-           if (!resultPass.IsOk)
+            Result resultPass = UserValidator.ValidatePassword(userDomain);
+            if (!resultPass.IsOk)
             {
                 return Results.BadRequest(new
                 {
@@ -84,10 +84,10 @@ public static class EndpointsUsers
                 });
             }
 
-            Guid teamId = userApp.Prefteam_id;
+            // Guid teamId = userApp.Prefteam_id;
 
-            Team team = req.ToTeam();
-            TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
+            // Team team = req.ToTeam();
+            // TeamEntity teamEntity = TeamMapper.ToEntity(team, teamId);
             
             Guid userId = Guid.NewGuid();
             UserEntity userEntity = UserMapper.ToEntity(userApp, userId);

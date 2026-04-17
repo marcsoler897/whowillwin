@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { register } from './services/authService'
 import './Register.css'
 
 interface RegisterProps {
@@ -11,35 +12,31 @@ export default function Register({ onGoToLogin }: RegisterProps) {
   const [password, setPassword] = useState('')
   const [prefTeamId, setPrefTeamId] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
+  function validate(): string {
+    if (!name.trim()) return 'Name is required'
+    if (!email.trim()) return 'Email is required'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email'
+    if (!password) return 'Password is required'
+    if (password.length < 6) return 'Password must be at least 6 characters'
+    return ''
+  }
+
   async function handleRegister() {
+    const validationError = validate()
+    if (validationError) { setError(validationError); return }
+
     setError('')
+    setSuccess('')
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:5081/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          Prefteam_id: prefTeamId,
-          Name: name,
-          Email: email,
-          Password: password,
-        }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.message ?? 'Registration failed')
-        return
-      }
-
-      const data = await res.json()
-      console.log('Registered:', data)
-      alert('Registered successfully!')
-      onGoToLogin()
-    } catch {
-      setError('Could not connect to server')
+      await register(name, email, password, prefTeamId)
+      setSuccess('Registered successfully! Redirecting to login...')
+      setTimeout(onGoToLogin, 1500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not connect to server')
     } finally {
       setLoading(false)
     }
@@ -77,6 +74,7 @@ export default function Register({ onGoToLogin }: RegisterProps) {
         />
 
         {error && <p className="register-error">{error}</p>}
+        {success && <p className="register-success">{success}</p>}
       </div>
 
       <div className="register-hills">

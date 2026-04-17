@@ -85,6 +85,12 @@
   text-align: center;
 }
 
+.register-success {
+  color: #1a6e2e;
+  font-size: 13px;
+  text-align: center;
+}
+
 /* Hills section */
 .register-hills {
   background: linear-gradient(180deg, #4a8c3f 0%, #3a7230 50%, #2d5a25 100%);

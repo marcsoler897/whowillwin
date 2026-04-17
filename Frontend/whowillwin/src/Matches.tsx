@@ -1,108 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
 import './Matches.css'
+import { useMatches, useSquad } from './hooks/useMatches'
 
-interface Season {
-  id: number
-  startDate: string
-  endDate: string
-}
-
-interface Match {
-  id: number
-  homeTeam: { id: number; name: string }
-  awayTeam: { id: number; name: string }
-  utcDate: string
-  status: string
-  matchday: number
-  score: { fullTime: { home: number | null; away: number | null } }
-}
-
-interface Player {
-  id: number
-  name: string
-  position: string
-}
-
-const COMPETITION_ID = 2014
-
-function useSquad(teamId: number | null) {
-  const [squad, setSquad] = useState<Player[]>([])
-  useEffect(() => {
-    if (teamId === null) return
-    setSquad([])
-    fetch(`http://localhost:5081/teams/${teamId}`)
-      .then(r => r.json())
-      .then(data => setSquad(data.squad ?? []))
-  }, [teamId])
-  return squad
+const byPosition = (squad: { id: number; name: string; position: string }[]) => {
+  const order = ['Goalkeeper', 'Defence', 'Midfield', 'Offence']
+  return [...squad].sort((a, b) => order.indexOf(a.position) - order.indexOf(b.position))
 }
 
 export default function Matches() {
-  const [seasons, setSeasons] = useState<Season[]>([])
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null)
-  const [matches, setMatches] = useState<Match[]>([])
-  const [selectedMatchday, setSelectedMatchday] = useState<number | null>(null)
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
-  const [loading, setLoading] = useState(false)
+  const {
+    seasons,
+    selectedSeason,
+    setSelectedSeason,
+    matchdays,
+    dayMatches,
+    selectedMatchday,
+    selectedMatch,
+    setSelectedMatch,
+    loading,
+    error,
+    isPastMatchday,
+    selectMatchday,
+  } = useMatches()
 
   const homeSquad = useSquad(selectedMatch?.homeTeam.id ?? null)
   const awaySquad = useSquad(selectedMatch?.awayTeam.id ?? null)
 
-  useEffect(() => {
-    fetch(`http://localhost:5081/competitions/${COMPETITION_ID}/seasons`)
-      .then(r => r.json())
-      .then(data => {
-        const today = new Date().toISOString().slice(0, 10)
-        const future: Season[] = (data.seasons ?? []).filter((s: Season) => s.endDate >= today)
-        setSeasons(future)
-        if (future.length > 0)
-          setSelectedSeason(new Date(future[0].startDate).getFullYear())
-      })
-  }, [])
-
-  useEffect(() => {
-    if (selectedSeason === null) return
-    setLoading(true)
-    setSelectedMatchday(null)
-    setSelectedMatch(null)
-    fetch(`http://localhost:5081/competitions/${COMPETITION_ID}/matches?season=${selectedSeason}`)
-      .then(r => r.json())
-      .then(data => {
-        const ms: Match[] = data.matches ?? []
-        setMatches(ms)
-        const firstUpcoming = ms.find(m => m.status !== 'FINISHED')
-        const autoDay = firstUpcoming ? firstUpcoming.matchday : ms[ms.length - 1]?.matchday ?? null
-        setSelectedMatchday(autoDay)
-        setSelectedMatch(firstUpcoming ?? ms[ms.length - 1] ?? null)
-      })
-      .finally(() => setLoading(false))
-  }, [selectedSeason])
-
-  const matchdays = useMemo(
-    () => [...new Set(matches.map(m => m.matchday))].sort((a, b) => a - b),
-    [matches]
-  )
-
-  const isPastMatchday = (day: number) =>
-    matches.filter(m => m.matchday === day).every(m => m.status === 'FINISHED')
-
-  const dayMatches = matches.filter(m => m.matchday === selectedMatchday)
-
-  const handleDayClick = (day: number) => {
-    setSelectedMatchday(day)
-    const first = matches.find(m => m.matchday === day && m.status !== 'FINISHED')
-      ?? matches.find(m => m.matchday === day)
-      ?? null
-    setSelectedMatch(first)
-  }
-
-  const played = (m: Match) => m.status === 'FINISHED'
+  const played = selectedMatch?.status === 'FINISHED'
   const seasonLabel = selectedSeason ? `${selectedSeason}/${String(selectedSeason + 1).slice(2)}` : ''
-
-  const byPosition = (squad: Player[]) => {
-    const order = ['Goalkeeper', 'Defence', 'Midfield', 'Offence']
-    return [...squad].sort((a, b) => order.indexOf(a.position) - order.indexOf(b.position))
-  }
 
   return (
     <>
@@ -122,6 +46,8 @@ export default function Matches() {
         <span className="season-label-text">Season {seasonLabel}</span>
       </div>
 
+      {error && <p className="tm-empty">{error}</p>}
+
       {!loading && matchdays.length > 0 && (
         <div className="tm-matchdays">
           {matchdays.map(day => (
@@ -132,7 +58,7 @@ export default function Matches() {
                 selectedMatchday === day ? 'tm-day-active' : '',
                 isPastMatchday(day) ? 'tm-day-past' : 'tm-day-future',
               ].join(' ')}
-              onClick={() => handleDayClick(day)}
+              onClick={() => selectMatchday(day)}
             >
               {day}
             </button>
@@ -155,7 +81,7 @@ export default function Matches() {
             <p className="match-date-inline">
               {new Date(selectedMatch.utcDate).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' })}
             </p>
-            {played(selectedMatch) ? (
+            {played ? (
               <p className="match-score">
                 {selectedMatch.score.fullTime.home} – {selectedMatch.score.fullTime.away}
               </p>
@@ -183,7 +109,7 @@ export default function Matches() {
           </div>
         </div>
       ) : (
-        <p className="tm-empty">No matches found.</p>
+        !error && <p className="tm-empty">No matches found.</p>
       )}
     </>
   )

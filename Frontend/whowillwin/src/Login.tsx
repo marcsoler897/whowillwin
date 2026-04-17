@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { login } from './services/authService'
 import './Login.css'
 
 interface LoginProps {
@@ -12,28 +13,26 @@ export default function Login({ onGoToRegister, onLoginSuccess }: LoginProps) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  function validate(): string {
+    if (!email.trim()) return 'Email is required'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email'
+    if (!password) return 'Password is required'
+    return ''
+  }
+
   async function handleLogin() {
+    const validationError = validate()
+    if (validationError) { setError(validationError); return }
+
     setError('')
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:5081/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Login: email, Password: password }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.message ?? 'Login failed')
-        return
-      }
-
-      const data = await res.json()
+      const data = await login(email, password)
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       onLoginSuccess()
-    } catch {
-      setError('Could not connect to server')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not connect to server')
     } finally {
       setLoading(false)
     }

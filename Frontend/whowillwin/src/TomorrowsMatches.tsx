@@ -1,22 +1,16 @@
 import { useEffect, useState } from 'react'
+import { getTomorrowsMatches, type Match } from './services/matchService'
 import './TomorrowsMatches.css'
-
-interface Match {
-  id: number
-  homeTeam: { name: string }
-  awayTeam: { name: string }
-  utcDate: string
-  status: string
-}
 
 export default function TomorrowsMatches() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:5081/matches')
-      .then(r => r.json())
-      .then(data => setMatches(data.matches ?? []))
+    getTomorrowsMatches()
+      .then(setMatches)
+      .catch(() => setError('Could not load matches'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -25,6 +19,8 @@ export default function TomorrowsMatches() {
       <h2 className="tm-title">Tomorrow's Matches</h2>
       {loading ? (
         <p className="tm-empty">Loading...</p>
+      ) : error ? (
+        <p className="tm-empty">{error}</p>
       ) : matches.length === 0 ? (
         <p className="tm-empty">No matches found.</p>
       ) : (

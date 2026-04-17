@@ -74,7 +74,7 @@ public class JswTokenService
                 IssuerSigningKey = new SymmetricSecurityKey(key),
 
                 ValidateIssuer = true,
-                ValidIssuer = "demo",
+                ValidIssuer = "whowillwin",
 
                 ValidateAudience = true,
                 ValidAudience = "public",
