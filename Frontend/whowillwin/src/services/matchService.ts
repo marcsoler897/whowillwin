@@ -1,4 +1,5 @@
 import { apiFetch } from './api'
+import type { Prediction } from '../types/prediction'
 
 export interface Season {
   id: number
@@ -42,4 +43,14 @@ export async function getSquad(teamId: number): Promise<Player[]> {
 export async function getTomorrowsMatches(): Promise<Match[]> {
   const data = await apiFetch<{ matches: Match[] }>('/matches')
   return data.matches ?? []
+}
+
+export async function getPrediction(homeTeamId: number, awayTeamId: number): Promise<Prediction> {
+  const url = `${import.meta.env.VITE_PREDICTOR_URL}/predict?homeTeamId=${homeTeamId}&awayTeamId=${awayTeamId}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail ?? `Prediction failed (${res.status})`)
+  }
+  return res.json()
 }

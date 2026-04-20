@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import './Matches.css'
 import { useMatches, useSquad } from './hooks/useMatches'
+import { getPrediction } from './services/matchService'
+import type { Prediction } from './types/prediction'
 
 const byPosition = (squad: { id: number; name: string; position: string }[]) => {
   const order = ['Goalkeeper', 'Defence', 'Midfield', 'Offence']
@@ -24,6 +27,25 @@ export default function Matches() {
 
   const homeSquad = useSquad(selectedMatch?.homeTeam.id ?? null)
   const awaySquad = useSquad(selectedMatch?.awayTeam.id ?? null)
+
+  const [prediction, setPrediction] = useState<Prediction | null>(null)
+  const [predLoading, setPredLoading] = useState(false)
+  const [predError, setPredError] = useState<string | null>(null)
+
+  async function handlePredict() {
+    if (!selectedMatch) return
+    setPrediction(null)
+    setPredError(null)
+    setPredLoading(true)
+    try {
+      const result = await getPrediction(selectedMatch.homeTeam.id, selectedMatch.awayTeam.id)
+      setPrediction(result)
+    } catch (e) {
+      setPredError(e instanceof Error ? e.message : 'Prediction failed')
+    } finally {
+      setPredLoading(false)
+    }
+  }
 
   const played = selectedMatch?.status === 'FINISHED'
   const seasonLabel = selectedSeason ? `${selectedSeason}/${String(selectedSeason + 1).slice(2)}` : ''
@@ -90,6 +112,22 @@ export default function Matches() {
                 {new Date(selectedMatch.utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             )}
+
+            <button className="predict-btn" onClick={handlePredict} disabled={predLoading}>
+              {predLoading ? 'Predicting…' : 'Predict'}
+            </button>
+
+            {predError && <p className="predict-error">{predError}</p>}
+
+            {prediction && (
+              <div className="predict-result">
+                <span className="predict-pct">{prediction.homeWinChance}%</span>
+                <span className="predict-label">vs</span>
+                <span className="predict-pct">{prediction.awayWinChance}%</span>
+                <p className="predict-elo">ELO: {prediction.homeElo} – {prediction.awayElo}</p>
+              </div>
+            )}
+
             {dayMatches.length > 1 && (
               <div className="match-other-list">
                 {dayMatches.filter(m => m.id !== selectedMatch.id).map(m => (
