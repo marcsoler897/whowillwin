@@ -1,4 +1,7 @@
 requests
 psycopg2-binary
-fastapi
-uvicorn
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
