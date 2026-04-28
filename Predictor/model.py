@@ -1,7 +1,17 @@
 import pandas as pd
 from sqlalchemy import create_engine
 import numpy as np
-
+import seaborn as sns
+import matplotlib.pyplot as plt
+# select less no df filter
+# Estudi
+# Quins camps tinc
+# Quin rang de dades té
+# Camps tenen dades correctes si no mirar com emplenar-los valor fix mitjana
+# Revisar dades
+# ia algorisme neteja de caracteristiques
+# Si són numèriques '3' o categòriques 'petit' 'mitjà' string - número saber importància distàncies
+# Múltiplies formes calcular distància mirar
 engine = create_engine("postgresql://postgres:postgres@localhost:5432/postgres")
 df = pd.read_sql("SELECT * FROM whowillwin.matches", engine)
 
@@ -9,7 +19,7 @@ df.to_csv("matches.csv", index=False)
 
 df = df[["season", "matchday", "utc_date", "home_team_id", "away_team_id", "home_goals", "away_goals", "winner"]]
 df = df.dropna(subset=["home_goals", "away_goals", "winner"])
-
+df = df.sort_values("utc_date").reset_index(drop=True)
 
 df["result"] = df["winner"].map({"HOME_TEAM": 0, "DRAW": 1, "AWAY_TEAM": 2})
 
@@ -38,3 +48,4 @@ clf = LogisticRegression(random_state=0).fit(X_train, y_train)
 print(clf.predict(X_test[:5]))
 print(clf.predict_proba(X_test[:5]))
 print(clf.score(X_test, y_test))
+

@@ -146,63 +146,70 @@ def ingest_teams(conn):
 # ── phase 1b: squads / players ────────────────────────────────────────────────
 
 def ingest_squads(conn):
-    cur = conn.cursor()
-    cur.execute("SELECT api_id, id FROM whowillwin.teams")
-    teams = cur.fetchall()
-    cur.close()
-
-    print(f"Fetching squads for {len(teams)} teams …")
-    for i, (api_id, t_uuid) in enumerate(teams, 1):
-        print(f"  [{i}/{len(teams)}] team {api_id} …", end=" ", flush=True)
-        data = api_get(f"teams/{api_id}")
+    for season in SEASONS:
+        print(f"Fetching squads for season {season} …", end=" ", flush=True)
+        data = api_get(
+            f"competitions/{COMPETITION_ID}/teams",
+            params={"season": season},
+        )
         if not data:
-            print("skipped")
+            print("no data.")
             continue
 
         cur = conn.cursor()
-        coach = data.get("coach") or {}
-        if isinstance(coach, dict) and coach.get("name"):
-            cur.execute(
-                "UPDATE whowillwin.teams SET coach_name = %s WHERE id = %s",
-                (coach["name"], str(t_uuid)),
-            )
+        player_count = 0
+        for team in data.get("teams", []):
+            t_api_id = team["id"]
+            cur.execute("SELECT id FROM whowillwin.teams WHERE api_id = %s", (t_api_id,))
+            row = cur.fetchone()
+            if not row:
+                continue
+            t_uuid = row[0]
 
-        for p in data.get("squad", []):
-            contract = p.get("contract") or {}
-            cur.execute(
-                """
-                INSERT INTO whowillwin.players
-                    (id, api_id, name, first_name, last_name, date_of_birth,
-                     nationality, position, shirt_number, team_id,
-                     contract_start, contract_until)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (api_id) DO UPDATE SET
-                    name           = EXCLUDED.name,
-                    position       = EXCLUDED.position,
-                    shirt_number   = EXCLUDED.shirt_number,
-                    team_id        = EXCLUDED.team_id,
-                    contract_start = EXCLUDED.contract_start,
-                    contract_until = EXCLUDED.contract_until
-                """,
-                (
-                    str(uuid.uuid4()),
-                    p["id"],
-                    p.get("name", ""),
-                    p.get("firstName"),
-                    p.get("lastName") or p.get("name", ""),
-                    p.get("dateOfBirth"),
-                    p.get("nationality"),
-                    p.get("position"),
-                    p.get("shirtNumber"),
-                    str(t_uuid),
-                    contract.get("start") if isinstance(contract, dict) else None,
-                    contract.get("until") if isinstance(contract, dict) else None,
-                ),
-            )
+            coach = team.get("coach") or {}
+            if isinstance(coach, dict) and coach.get("name"):
+                cur.execute(
+                    "UPDATE whowillwin.teams SET coach_name = %s WHERE id = %s",
+                    (coach["name"], str(t_uuid)),
+                )
+
+            for p in team.get("squad", []):
+                contract = p.get("contract") or {}
+                cur.execute(
+                    """
+                    INSERT INTO whowillwin.players
+                        (id, api_id, name, first_name, last_name, date_of_birth,
+                         nationality, position, shirt_number, team_id,
+                         contract_start, contract_until)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (api_id) DO UPDATE SET
+                        name           = EXCLUDED.name,
+                        position       = EXCLUDED.position,
+                        shirt_number   = EXCLUDED.shirt_number,
+                        team_id        = EXCLUDED.team_id,
+                        contract_start = EXCLUDED.contract_start,
+                        contract_until = EXCLUDED.contract_until
+                    """,
+                    (
+                        str(uuid.uuid4()),
+                        p["id"],
+                        p.get("name", ""),
+                        p.get("firstName"),
+                        p.get("lastName") or p.get("name", ""),
+                        p.get("dateOfBirth"),
+                        p.get("nationality"),
+                        p.get("position"),
+                        p.get("shirtNumber"),
+                        str(t_uuid),
+                        contract.get("start") if isinstance(contract, dict) else None,
+                        contract.get("until") if isinstance(contract, dict) else None,
+                    ),
+                )
+                player_count += 1
+
         conn.commit()
         cur.close()
-        print("ok")
-
+        print(f"{player_count} players.")
 
 # ── phase 1c: matches + goals (bulk) ─────────────────────────────────────────
 
@@ -246,10 +253,10 @@ def ingest_season(conn, season: int) -> list[tuple]:
             """
             INSERT INTO whowillwin.matches
                 (id, api_id, home_team_id, away_team_id, utc_date, status,
-                 matchday, season, stage, match_group,
+                 matchday, season, stage,
                  home_goals, away_goals, home_goals_ht, away_goals_ht,
                  winner, duration)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (api_id) DO UPDATE SET
                 status        = EXCLUDED.status,
                 home_goals    = EXCLUDED.home_goals,
@@ -264,7 +271,7 @@ def ingest_season(conn, season: int) -> list[tuple]:
                 m_uuid, m["id"], str(h_uuid), str(a_uuid),
                 m["utcDate"], m["status"],
                 m.get("matchday"), season,
-                m.get("stage"), m.get("group"),
+                m.get("stage"),
                 ft.get("home") if finished else None,
                 ft.get("away") if finished else None,
                 ht_s.get("home") if finished else None,
@@ -626,46 +633,14 @@ def main():
 
     conn = get_connection()
 
-    cur = conn.cursor()
+    # 1a — teams
+    ingest_teams(conn)
 
-    # 1a — teams (skip if already loaded)
-    cur.execute("SELECT COUNT(*) FROM whowillwin.teams")
-    if cur.fetchone()[0] == 0:
-        ingest_teams(conn)
-    else:
-        print("Teams already loaded — skipping.")
-
-    # 1b — squads / players (skip if already loaded)
-    cur.execute("SELECT COUNT(*) FROM whowillwin.players")
-    if cur.fetchone()[0] == 0:
-        ingest_squads(conn)
-    else:
-        print("Players already loaded — skipping.")
-
-    cur.close()
-
-    # 1c — matches + goals (skip each season if already loaded)
+    # 1c — matches + goals
     all_finished: list[tuple] = []
     for season in SEASONS:
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM whowillwin.matches WHERE season = %s", (season,))
-        count = cur.fetchone()[0]
-        cur.close()
-        if count > 0:
-            print(f"Season {season}: already loaded ({count} matches) — skipping fetch.")
-            # still collect finished pairs for phase 2 check
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT m.id, m.api_id FROM whowillwin.matches m "
-                "WHERE m.season = %s AND m.status = 'FINISHED'",
-                (season,)
-            )
-            for db_id, api_id in cur.fetchall():
-                all_finished.append((str(db_id), {"id": api_id}))
-            cur.close()
-        else:
-            pairs = ingest_season(conn, season)
-            all_finished.extend(pairs)
+        pairs = ingest_season(conn, season)
+        all_finished.extend(pairs)
 
     # 2 — per-match details (stats, lineups, bookings, subs)
     if not args.no_details:
@@ -675,38 +650,17 @@ def main():
         for i, (db_uuid, m_data) in enumerate(all_finished, 1):
             if i % 20 == 0:
                 print(f"  {i}/{total}")
-            # skip if stats already loaded for this match
-            cur = conn.cursor()
-            cur.execute("SELECT 1 FROM whowillwin.match_stats WHERE match_id = %s LIMIT 1", (db_uuid,))
-            already = cur.fetchone()
-            cur.close()
-            if already:
-                continue
             ingest_match_details(conn, db_uuid, m_data["id"])
     else:
         print("\nPhase 2 skipped (--no-details).")
 
-    # standings — skip each season if already computed
+    # standings
     print("\nBuilding standings …")
     for season in SEASONS:
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM whowillwin.standings WHERE season = %s", (season,))
-        if cur.fetchone()[0] == 0:
-            cur.close()
-            compute_standings(conn, season)
-        else:
-            cur.close()
-            print(f"  Season {season} standings already computed — skipping.")
+        compute_standings(conn, season)
 
-    # head-to-head — skip if already computed
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM whowillwin.head_to_head")
-    if cur.fetchone()[0] == 0:
-        cur.close()
-        compute_h2h(conn)
-    else:
-        cur.close()
-        print("Head-to-head already computed — skipping.")
+    # head-to-head
+    compute_h2h(conn)
 
     conn.close()
     print("\nIngestion complete.")
