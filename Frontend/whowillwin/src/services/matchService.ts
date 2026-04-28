@@ -45,12 +45,27 @@ export async function getTomorrowsMatches(): Promise<Match[]> {
   return data.matches ?? []
 }
 
-export async function getPrediction(homeTeamId: number, awayTeamId: number): Promise<Prediction> {
-  const url = `${import.meta.env.VITE_PREDICTOR_URL}/predict?homeTeamId=${homeTeamId}&awayTeamId=${awayTeamId}`
+export async function getPrediction(homeTeamId: number, awayTeamId: number, matchday = 1): Promise<Prediction> {
+  const url = `${import.meta.env.VITE_PREDICTOR_URL}/predict?homeTeamId=${homeTeamId}&awayTeamId=${awayTeamId}&matchday=${matchday}`
   const res = await fetch(url)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.detail ?? `Prediction failed (${res.status})`)
   }
+  return res.json()
+}
+
+export interface FuturePrediction {
+  homeTeamId: number
+  awayTeamId: number
+  matchday: number
+  homeWinChance: number
+  drawChance: number
+  awayWinChance: number
+}
+
+export async function getFuturePredictions(): Promise<FuturePrediction[]> {
+  const res = await fetch(`${import.meta.env.VITE_PREDICTOR_URL}/future-predictions`)
+  if (!res.ok) return []
   return res.json()
 }
