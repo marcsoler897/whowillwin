@@ -9,18 +9,16 @@ from sklearn.metrics import classification_report
 engine = create_engine("postgresql://postgres:postgres@localhost:5432/postgres")
 df = pd.read_sql("SELECT * FROM whowillwin.matches", engine)
 teams = pd.read_sql("SELECT id, name FROM whowillwin.teams", engine)
+standings = pd.read_sql(
+    "SELECT * FROM whowillwin.standings WHERE type = 'TOTAL'", engine
+)
 
 team_map = dict(zip(teams["id"], teams["name"]))
 
 df = df[[
-    "season",
-    "matchday",
-    "utc_date",
-    "home_team_id",
-    "away_team_id",
-    "home_goals",
-    "away_goals",
-    "winner"
+    "season", "matchday", "utc_date",
+    "home_team_id", "away_team_id",
+    "home_goals", "away_goals", "winner"
 ]]
 
 # ── EDA ────────────────────────────────────────────────────────────────────
@@ -43,30 +41,36 @@ IQR = Q3 - Q1
 outliers = df[(df["home_goals"] < Q1 - 1.5 * IQR) | (df["home_goals"] > Q3 + 1.5 * IQR)]
 print(f"Outlier matches: {len(outliers)}")
 
-plt.figure(figsize=(10, 4))
-plt.subplot(1, 2, 1)
+print("\n── Standings sample ──")
+print(standings[["team_id", "season", "matchday", "position", "points", "goal_diff", "form"]].head(10))
+
+plt.figure(figsize=(15, 4))
+plt.subplot(1, 3, 1)
 sns.histplot(df["home_goals"].dropna(), bins=10)
 plt.title("Home Goals Distribution")
-plt.subplot(1, 2, 2)
+plt.subplot(1, 3, 2)
 sns.histplot(df["away_goals"].dropna(), bins=10)
 plt.title("Away Goals Distribution")
+plt.subplot(1, 3, 3)
+sns.histplot(standings["points"].dropna(), bins=15)
+plt.title("Points Distribution (Standings)")
 plt.tight_layout()
 
 # ── Processing ─────────────────────────────────────────────────────────────
 df = df.sort_values("utc_date").reset_index(drop=True)
 
-# Cap outliers at 5 goals
 df["home_goals"] = df["home_goals"].clip(upper=5)
 df["away_goals"] = df["away_goals"].clip(upper=5)
 
+# ── Manual rolling stats ───────────────────────────────────────────────────
 team_stats = {}
 
-home_avg_goals = []
-away_avg_goals = []
-home_win_rate  = []
-away_win_rate  = []
-home_form5     = []
-away_form5     = []
+home_avg_goals         = []
+away_avg_goals         = []
+home_form5             = []
+away_form5             = []
+home_win_rate_weighted = []
+away_win_rate_weighted = []
 
 def safe_mean(lst):
     return float(sum(lst) / len(lst)) if lst else 0.0
@@ -80,12 +84,17 @@ for _, row in df.iterrows():
     if away not in team_stats:
         team_stats[away] = {"scored": [], "wins": []}
 
+    hmp = len(team_stats[home]["wins"])
+    amp = len(team_stats[away]["wins"])
+    hwr = safe_mean(team_stats[home]["wins"])
+    awr = safe_mean(team_stats[away]["wins"])
+
     home_avg_goals.append(safe_mean(team_stats[home]["scored"]))
     away_avg_goals.append(safe_mean(team_stats[away]["scored"]))
-    home_win_rate.append(safe_mean(team_stats[home]["wins"]))
-    away_win_rate.append(safe_mean(team_stats[away]["wins"]))
     home_form5.append(safe_mean(team_stats[home]["wins"][-5:]))
     away_form5.append(safe_mean(team_stats[away]["wins"][-5:]))
+    home_win_rate_weighted.append(hwr * min(hmp / 38, 1.0))
+    away_win_rate_weighted.append(awr * min(amp / 38, 1.0))
 
     hg = row["home_goals"]
     ag = row["away_goals"]
@@ -103,41 +112,73 @@ for _, row in df.iterrows():
             team_stats[home]["wins"].append(0)
             team_stats[away]["wins"].append(0)
 
-df["home_avg_goals"] = home_avg_goals
-df["away_avg_goals"] = away_avg_goals
-df["home_win_rate"]  = home_win_rate
-df["away_win_rate"]  = away_win_rate
-df["home_form5"]     = home_form5
-df["away_form5"]     = away_form5
+df["home_avg_goals"]         = home_avg_goals
+df["away_avg_goals"]         = away_avg_goals
+df["home_form5"]             = home_form5
+df["away_form5"]             = away_form5
+df["home_win_rate_weighted"] = home_win_rate_weighted
+df["away_win_rate_weighted"] = away_win_rate_weighted
+
+# ── Join standings (previous matchday) ────────────────────────────────────
+# For matchday N we look up standings from matchday N-1
+# Matchday 1 has no previous → fillna with 0
+
+std = standings[["team_id", "season", "matchday", "position", "points", "goal_diff", "won", "drawn", "lost"]].copy()
+std["matchday"] = std["matchday"] + 1  # shift so we join on NEXT matchday
+
+df = df.merge(
+    std.rename(columns={
+        "team_id":   "home_team_id",
+        "position":  "home_position",
+        "points":    "home_points",
+        "goal_diff": "home_goal_diff",
+        "won":       "home_won",
+        "drawn":     "home_drawn",
+        "lost":      "home_lost",
+    }),
+    on=["home_team_id", "season", "matchday"],
+    how="left"
+)
+
+df = df.merge(
+    std.rename(columns={
+        "team_id":   "away_team_id",
+        "position":  "away_position",
+        "points":    "away_points",
+        "goal_diff": "away_goal_diff",
+        "won":       "away_won",
+        "drawn":     "away_drawn",
+        "lost":      "away_lost",
+    }),
+    on=["away_team_id", "season", "matchday"],
+    how="left"
+)
+
+# Fill matchday 1 nulls with 0
+standings_cols = [
+    "home_position", "home_points", "home_goal_diff", "home_won", "home_drawn", "home_lost",
+    "away_position", "away_points", "away_goal_diff", "away_won", "away_drawn", "away_lost",
+]
+df[standings_cols] = df[standings_cols].fillna(0)
 
 # ── Box plots ──────────────────────────────────────────────────────────────
 df_plot = df[df["winner"].notna()].copy()
 
-plt.figure(figsize=(15, 10))
+fig, axes = plt.subplots(3, 4, figsize=(20, 15))
+axes = axes.flatten()
 
-plt.subplot(2, 3, 1)
-sns.boxplot(x="winner", y="home_avg_goals", data=df_plot)
-plt.title("Home Avg Goals")
+plot_features = [
+    "home_avg_goals", "away_avg_goals",
+    "home_win_rate_weighted", "away_win_rate_weighted",
+    "home_form5", "away_form5",
+    "home_points", "away_points",
+    "home_position", "away_position",
+    "home_goal_diff", "away_goal_diff",
+]
 
-plt.subplot(2, 3, 2)
-sns.boxplot(x="winner", y="away_avg_goals", data=df_plot)
-plt.title("Away Avg Goals")
-
-plt.subplot(2, 3, 3)
-sns.boxplot(x="winner", y="home_win_rate", data=df_plot)
-plt.title("Home Win Rate")
-
-plt.subplot(2, 3, 4)
-sns.boxplot(x="winner", y="away_win_rate", data=df_plot)
-plt.title("Away Win Rate")
-
-plt.subplot(2, 3, 5)
-sns.boxplot(x="winner", y="home_form5", data=df_plot)
-plt.title("Home Form (Last 5)")
-
-plt.subplot(2, 3, 6)
-sns.boxplot(x="winner", y="away_form5", data=df_plot)
-plt.title("Away Form (Last 5)")
+for i, feat in enumerate(plot_features):
+    sns.boxplot(x="winner", y=feat, data=df_plot, ax=axes[i])
+    axes[i].set_title(feat)
 
 plt.tight_layout()
 plt.show()
@@ -147,10 +188,16 @@ FEATURES = [
     "matchday",
     "home_avg_goals",
     "away_avg_goals",
-    "home_win_rate",
-    "away_win_rate",
+    "home_win_rate_weighted",
+    "away_win_rate_weighted",
     "home_form5",
     "away_form5",
+    "home_points",
+    "away_points",
+    "home_position",
+    "away_position",
+    "home_goal_diff",
+    "away_goal_diff",
 ]
 
 df_train  = df[df["winner"].notna()].copy()
