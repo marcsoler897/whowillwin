@@ -216,25 +216,42 @@ def ingest_squads(conn):
 def ingest_season(conn, season: int) -> list[tuple]:
     """
     Fetch all matches for a season.
-    Returns [(internal_uuid_str, api_match_dict)] for finished matches (phase 2 input).
+    Returns [(internal_uuid_str, api_id)] for finished matches (phase 2 input).
+    Skips the API call if matches for this season are already in the DB.
     """
-    print(f"Season {season}: fetching matches …", end=" ", flush=True)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT COUNT(*) FROM whowillwin.matches WHERE season = %s", (season,)
+    )
+    existing = cur.fetchone()[0]
+    cur.close()
+
+    if existing:
+        print(f"Season {season}: {existing} matches already in DB, loading from DB …", end=" ", flush=True)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, api_id FROM whowillwin.matches WHERE season = %s AND status = 'FINISHED'",
+            (season,),
+        )
+        pairs = [(str(r[0]), r[1]) for r in cur.fetchall()]
+        cur.close()
+        print(f"{len(pairs)} finished.")
+        return pairs
+
+    print(f"Season {season}: fetching matches from API …", end=" ", flush=True)
     data = api_get(
         f"competitions/{COMPETITION_ID}/matches",
         params={"season": season},
-        extra_headers={"X-Unfold-Goals": "true"},
     )
     if not data:
         print("no data.")
         return []
 
     cur = conn.cursor()
-    inserted   = 0
-    goal_count = 0
+    inserted        = 0
     finished_pairs: list[tuple] = []
 
     for m in data.get("matches", []):
-        # ensure both teams exist (promoted/relegated teams may differ by season)
         for td in (m["homeTeam"], m["awayTeam"]):
             _ensure_team(cur, td)
 
@@ -285,35 +302,11 @@ def ingest_season(conn, season: int) -> list[tuple]:
         inserted += 1
 
         if finished and db_uuid:
-            finished_pairs.append((db_uuid, m))
-
-            # goals arrive via X-Unfold-Goals header
-            for g in m.get("goals", []):
-                scorer = g.get("scorer") or {}
-                assist = g.get("assist") or {}
-                g_team = g.get("team")   or {}
-                cur.execute(
-                    """
-                    INSERT INTO whowillwin.goals
-                        (id, match_id, team_id, scorer_id, assist_id,
-                         minute, injury_time, type,
-                         home_score_at_time, away_score_at_time)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                    """,
-                    (
-                        str(uuid.uuid4()), db_uuid,
-                        str(_team_uuid(cur, g_team.get("id")))   if g_team.get("id")   else None,
-                        str(_player_uuid(cur, scorer.get("id"))) if scorer.get("id")   else None,
-                        str(_player_uuid(cur, assist.get("id"))) if assist.get("id")   else None,
-                        g.get("minute"), g.get("injuryTime"), g.get("type"),
-                        g.get("homeScore"), g.get("awayScore"),
-                    ),
-                )
-                goal_count += 1
+            finished_pairs.append((db_uuid, m["id"]))
 
     conn.commit()
     cur.close()
-    print(f"{inserted} matches, {goal_count} goals.")
+    print(f"{inserted} matches.")
     return finished_pairs
 
 
@@ -339,84 +332,116 @@ def ingest_match_details(conn, db_uuid: str, api_id: int):
 
     cur = conn.cursor()
 
-    # stats
-    for side_key in ("homeTeam", "awayTeam"):
-        side   = data.get(side_key, {})
-        t_uuid = _team_uuid(cur, side.get("id"))
-        if not t_uuid:
-            continue
-        stats = side.get("statistics") or []
+    # ── goals ────────────────────────────────────────────────────────────────
+    # delete existing goals for this match so re-runs don't duplicate
+    cur.execute("DELETE FROM whowillwin.goals WHERE match_id = %s", (db_uuid,))
+    for g in data.get("goals", []):
+        scorer = g.get("scorer") or {}
+        assist = g.get("assist") or {}
+        g_team = g.get("team")   or {}
+        scorer_uuid = None
+        assist_uuid = None
+        if scorer.get("id"):
+            scorer_uuid = _player_uuid(cur, scorer["id"])
+            if not scorer_uuid:
+                scorer_uuid = _ensure_player(cur, scorer, _team_uuid(cur, g_team.get("id")))
+        if assist.get("id"):
+            assist_uuid = _player_uuid(cur, assist["id"])
+            if not assist_uuid:
+                assist_uuid = _ensure_player(cur, assist, _team_uuid(cur, g_team.get("id")))
         cur.execute(
             """
-            INSERT INTO whowillwin.match_stats
-                (id, match_id, team_id,
-                 possession, shots, shots_on_goal, shots_off_goal,
-                 corners, fouls, offsides, saves,
-                 throw_ins, free_kicks, goal_kicks,
-                 yellow_cards, yellow_red_cards, red_cards)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            ON CONFLICT (match_id, team_id) DO UPDATE SET
-                possession    = EXCLUDED.possession,
-                shots         = EXCLUDED.shots,
-                shots_on_goal = EXCLUDED.shots_on_goal,
-                corners       = EXCLUDED.corners,
-                fouls         = EXCLUDED.fouls,
-                offsides      = EXCLUDED.offsides,
-                saves         = EXCLUDED.saves
+            INSERT INTO whowillwin.goals
+                (id, match_id, team_id, scorer_id, assist_id,
+                 minute, injury_time, type,
+                 home_score_at_time, away_score_at_time)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """,
             (
-                str(uuid.uuid4()), db_uuid, str(t_uuid),
-                _stat(stats, "BALL_POSSESSION"),
-                _stat(stats, "TOTAL_SHOTS"),
-                _stat(stats, "SHOTS_ON_GOAL"),
-                _stat(stats, "SHOTS_OFF_GOAL"),
-                _stat(stats, "CORNER_KICKS"),
-                _stat(stats, "FOULS"),
-                _stat(stats, "OFFSIDES"),
-                _stat(stats, "GOALKEEPER_SAVES"),
-                _stat(stats, "THROW_INS"),
-                _stat(stats, "FREE_KICKS"),
-                _stat(stats, "GOAL_KICKS"),
-                _stat(stats, "YELLOW_CARDS"),
-                _stat(stats, "YELLOW_RED_CARDS"),
-                _stat(stats, "RED_CARDS"),
+                str(uuid.uuid4()), db_uuid,
+                str(_team_uuid(cur, g_team["id"])) if g_team.get("id") else None,
+                str(scorer_uuid) if scorer_uuid else None,
+                str(assist_uuid) if assist_uuid else None,
+                g.get("minute"), g.get("injuryTime"), g.get("type"),
+                g.get("homeScore"), g.get("awayScore"),
             ),
         )
 
-    # bookings
+    # ── bookings ──────────────────────────────────────────────────────────────
+    cur.execute("DELETE FROM whowillwin.bookings WHERE match_id = %s", (db_uuid,))
     for b in data.get("bookings", []):
-        p  = b.get("player") or {}
-        t  = b.get("team")   or {}
+        p = b.get("player") or {}
+        t = b.get("team")   or {}
+        t_uuid = _team_uuid(cur, t["id"]) if t.get("id") else None
+        p_uuid = None
+        if p.get("id"):
+            p_uuid = _player_uuid(cur, p["id"])
+            if not p_uuid:
+                p_uuid = _ensure_player(cur, p, t_uuid)
         cur.execute(
             "INSERT INTO whowillwin.bookings (id,match_id,team_id,player_id,minute,card)"
             " VALUES (%s,%s,%s,%s,%s,%s)",
             (
                 str(uuid.uuid4()), db_uuid,
-                str(_team_uuid(cur, t.get("id")))   if t.get("id")   else None,
-                str(_player_uuid(cur, p.get("id"))) if p.get("id")   else None,
+                str(t_uuid) if t_uuid else None,
+                str(p_uuid) if p_uuid else None,
                 b.get("minute"), b.get("card"),
             ),
         )
 
-    # substitutions
+    # ── substitutions ─────────────────────────────────────────────────────────
+    cur.execute("DELETE FROM whowillwin.substitutions WHERE match_id = %s", (db_uuid,))
     for s in data.get("substitutions", []):
         t     = s.get("team")      or {}
         p_out = s.get("playerOut") or {}
         p_in  = s.get("playerIn")  or {}
+        t_uuid = _team_uuid(cur, t["id"]) if t.get("id") else None
+        out_uuid = None
+        in_uuid  = None
+        if p_out.get("id"):
+            out_uuid = _player_uuid(cur, p_out["id"])
+            if not out_uuid:
+                out_uuid = _ensure_player(cur, p_out, t_uuid)
+        if p_in.get("id"):
+            in_uuid = _player_uuid(cur, p_in["id"])
+            if not in_uuid:
+                in_uuid = _ensure_player(cur, p_in, t_uuid)
         cur.execute(
             "INSERT INTO whowillwin.substitutions"
             " (id,match_id,team_id,player_out_id,player_in_id,minute)"
             " VALUES (%s,%s,%s,%s,%s,%s)",
             (
                 str(uuid.uuid4()), db_uuid,
-                str(_team_uuid(cur, t.get("id")))       if t.get("id")     else None,
-                str(_player_uuid(cur, p_out.get("id"))) if p_out.get("id") else None,
-                str(_player_uuid(cur, p_in.get("id")))  if p_in.get("id")  else None,
+                str(t_uuid)   if t_uuid   else None,
+                str(out_uuid) if out_uuid else None,
+                str(in_uuid)  if in_uuid  else None,
                 s.get("minute"),
             ),
         )
 
-    # lineups
+    # ── penalties ─────────────────────────────────────────────────────────────
+    cur.execute("DELETE FROM whowillwin.penalties WHERE match_id = %s", (db_uuid,))
+    for pen in data.get("penalties", []):
+        p = pen.get("player") or {}
+        t = pen.get("team")   or {}
+        t_uuid = _team_uuid(cur, t["id"]) if t.get("id") else None
+        p_uuid = None
+        if p.get("id"):
+            p_uuid = _player_uuid(cur, p["id"])
+            if not p_uuid:
+                p_uuid = _ensure_player(cur, p, t_uuid)
+        cur.execute(
+            "INSERT INTO whowillwin.penalties (id,match_id,team_id,player_id,scored)"
+            " VALUES (%s,%s,%s,%s,%s)",
+            (
+                str(uuid.uuid4()), db_uuid,
+                str(t_uuid) if t_uuid else None,
+                str(p_uuid) if p_uuid else None,
+                pen.get("scored", False),
+            ),
+        )
+
+    # ── lineups ───────────────────────────────────────────────────────────────
     for side_key in ("homeTeam", "awayTeam"):
         side   = data.get(side_key, {})
         t_uuid = _team_uuid(cur, side.get("id"))
@@ -438,6 +463,59 @@ def ingest_match_details(conn, db_uuid: str, api_id: int):
                     (str(uuid.uuid4()), db_uuid, str(t_uuid), str(pu),
                      p.get("position"), p.get("shirtNumber"), ltype),
                 )
+
+    # ── match stats ───────────────────────────────────────────────────────────
+    cur.execute("SELECT COUNT(*) FROM whowillwin.match_stats WHERE match_id = %s", (db_uuid,))
+    if cur.fetchone()[0] == 0:
+        for side_key in ("homeTeam", "awayTeam"):
+            side   = data.get(side_key, {})
+            t_uuid = _team_uuid(cur, side.get("id"))
+            if not t_uuid:
+                continue
+            stats = side.get("statistics") or []
+            cur.execute(
+                """
+                INSERT INTO whowillwin.match_stats
+                    (id, match_id, team_id,
+                     possession, shots, shots_on_goal, shots_off_goal,
+                     corners, fouls, offsides, saves,
+                     throw_ins, free_kicks, goal_kicks,
+                     yellow_cards, yellow_red_cards, red_cards)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (match_id, team_id) DO UPDATE SET
+                    possession      = EXCLUDED.possession,
+                    shots           = EXCLUDED.shots,
+                    shots_on_goal   = EXCLUDED.shots_on_goal,
+                    shots_off_goal  = EXCLUDED.shots_off_goal,
+                    corners         = EXCLUDED.corners,
+                    fouls           = EXCLUDED.fouls,
+                    offsides        = EXCLUDED.offsides,
+                    saves           = EXCLUDED.saves,
+                    throw_ins       = EXCLUDED.throw_ins,
+                    free_kicks      = EXCLUDED.free_kicks,
+                    goal_kicks      = EXCLUDED.goal_kicks,
+                    yellow_cards    = EXCLUDED.yellow_cards,
+                    yellow_red_cards = EXCLUDED.yellow_red_cards,
+                    red_cards       = EXCLUDED.red_cards
+                """,
+                (
+                    str(uuid.uuid4()), db_uuid, str(t_uuid),
+                    _stat(stats, "BALL_POSSESSION"),
+                    _stat(stats, "TOTAL_SHOTS"),
+                    _stat(stats, "SHOTS_ON_GOAL"),
+                    _stat(stats, "SHOTS_OFF_GOAL"),
+                    _stat(stats, "CORNER_KICKS"),
+                    _stat(stats, "FOULS"),
+                    _stat(stats, "OFFSIDES"),
+                    _stat(stats, "GOALKEEPER_SAVES"),
+                    _stat(stats, "THROW_INS"),
+                    _stat(stats, "FREE_KICKS"),
+                    _stat(stats, "GOAL_KICKS"),
+                    _stat(stats, "YELLOW_CARDS"),
+                    _stat(stats, "YELLOW_RED_CARDS"),
+                    _stat(stats, "RED_CARDS"),
+                ),
+            )
 
     conn.commit()
     cur.close()
@@ -633,33 +711,44 @@ def main():
 
     conn = get_connection()
 
-    # 1a — teams
+    # 1a — teams (must be first; everything else FK-references teams)
     ingest_teams(conn)
 
-    # 1c — matches + goals
+    # 1b — squads / players (needs teams to exist)
+    ingest_squads(conn)
+
+    # 1c — matches (needs teams; returns finished pairs for phase 2)
     all_finished: list[tuple] = []
     for season in SEASONS:
         pairs = ingest_season(conn, season)
         all_finished.extend(pairs)
 
-    # 2 — per-match details (stats, lineups, bookings, subs)
+    # 2 — per-match details: goals, bookings, subs, penalties, lineups, stats
     if not args.no_details:
-        total = len(all_finished)
-        eta   = total * CALL_DELAY / 60
-        print(f"\nPhase 2: {total} matches (~{eta:.0f} min due to rate limit) …")
-        for i, (db_uuid, m_data) in enumerate(all_finished, 1):
+        # skip matches that already have goals ingested
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT match_id FROM whowillwin.goals")
+        done = {str(r[0]) for r in cur.fetchall()}
+        cur.close()
+
+        pending = [(db_uuid, m) for db_uuid, m in all_finished if db_uuid not in done]
+        skipped = len(all_finished) - len(pending)
+        total   = len(pending)
+        eta     = total * CALL_DELAY / 60
+        print(f"\nPhase 2: {total} matches to fetch, {skipped} already done (~{eta:.0f} min) …")
+        for i, (db_uuid, api_id) in enumerate(pending, 1):
             if i % 20 == 0:
                 print(f"  {i}/{total}")
-            ingest_match_details(conn, db_uuid, m_data["id"])
+            ingest_match_details(conn, db_uuid, api_id)
     else:
         print("\nPhase 2 skipped (--no-details).")
 
-    # standings
+    # standings — computed from matches, must run after phase 1c
     print("\nBuilding standings …")
     for season in SEASONS:
         compute_standings(conn, season)
 
-    # head-to-head
+    # head-to-head — computed from matches, must run after standings
     compute_h2h(conn)
 
     conn.close()
