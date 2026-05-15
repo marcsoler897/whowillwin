@@ -34,6 +34,7 @@ standings = pd.read_sql(
     "SELECT * FROM whowillwin.standings WHERE type = 'TOTAL'", engine
 )
 h2h = pd.read_sql("SELECT * FROM whowillwin.head_to_head", engine)
+scorers = pd.read_sql("SELECT team_id, season, goals, assists, penalties FROM whowillwin.scorers", engine)
 
 df = df[[
     "season", "matchday", "utc_date",
@@ -167,15 +168,31 @@ df["h2h_draws"]     = h2h_draws
 df["h2h_away_wins"] = h2h_away_wins
 df["h2h_avg_goals"] = h2h_avg_goals
 
+# ── join scorers ──────────────────────────────────────────────────────────────
+
+df = df.merge(
+    scorers.rename(columns={"team_id": "home_team_id", "goals": "home_scorer_goals",
+                             "assists": "home_scorer_assists", "penalties": "home_scorer_penalties"}),
+    on=["home_team_id", "season"], how="left"
+)
+df = df.merge(
+    scorers.rename(columns={"team_id": "away_team_id", "goals": "away_scorer_goals",
+                             "assists": "away_scorer_assists", "penalties": "away_scorer_penalties"}),
+    on=["away_team_id", "season"], how="left"
+)
+scorer_cols = ["home_scorer_goals", "away_scorer_goals", "home_scorer_assists", "away_scorer_assists",
+               "home_scorer_penalties", "away_scorer_penalties"]
+df[scorer_cols] = df[scorer_cols].fillna(0)
+
 # ── train model ───────────────────────────────────────────────────────────────
 
 FEATURES = [
     "home_avg_goals", "away_avg_goals",
     "home_win_rate_weighted", "away_win_rate_weighted",
     "home_points", "away_points",
-    "home_position", "away_position",
     "home_goal_diff", "away_goal_diff",
     "h2h_home_wins", "h2h_away_wins", "h2h_draws",
+    "home_scorer_goals", "away_scorer_goals",
 ]
 
 df_train  = df[df["winner"].notna()].copy()
@@ -184,7 +201,7 @@ df_future = df[df["winner"].isna()].copy()
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(df_train[FEATURES])
 
-model = SVC(kernel='rbf', class_weight='balanced', random_state=42, probability=True)
+model = SVC(kernel='rbf', C=100, gamma=0.001, class_weight='balanced', random_state=42, probability=True)
 model.fit(X_train_scaled, df_train["winner"])
 
 classes  = list(model.classes_)
@@ -204,15 +221,22 @@ latest_standings = (
     .groupby("team_id")
     .last()
     .reset_index()
-)[["team_id", "position", "points", "goal_diff"]]
+)[["team_id", "points", "goal_diff"]]
 standings_map: dict = {
     str(row["team_id"]): {
-        "position":  float(row["position"]),
         "points":    float(row["points"]),
         "goal_diff": float(row["goal_diff"]),
     }
     for _, row in latest_standings.iterrows()
 }
+
+# scorers snapshot: most recent season per team
+scorers_map: dict = {}
+for _, row in scorers.sort_values("season").iterrows():
+    scorers_map[str(row["team_id"])] = {
+        "home_scorer_goals": float(row["goals"]),
+        "away_scorer_goals": float(row["goals"]),
+    }
 
 # current rolling stats snapshot after all played matches
 current_stats: dict = {
@@ -233,9 +257,13 @@ def _predict_proba(home_id: str, away_id: str) -> tuple[float, float, float]:
     if not home_s or not away_s:
         raise HTTPException(status_code=404, detail="No match data for team")
 
-    default_st = {"position": 0.0, "points": 0.0, "goal_diff": 0.0}
+    default_st = {"points": 0.0, "goal_diff": 0.0}
     home_st = standings_map.get(home_id, default_st)
     away_st = standings_map.get(away_id, default_st)
+
+    default_sc = {"home_scorer_goals": 0.0, "away_scorer_goals": 0.0}
+    home_sc = scorers_map.get(home_id, default_sc)
+    away_sc = scorers_map.get(away_id, default_sc)
 
     _, h2h_hw, h2h_d, h2h_aw, _ = get_h2h_stats(home_id, away_id, h2h)
 
@@ -246,13 +274,13 @@ def _predict_proba(home_id: str, away_id: str) -> tuple[float, float, float]:
         away_s["away_win_rate_weighted"],
         home_st["points"],
         away_st["points"],
-        home_st["position"],
-        away_st["position"],
         home_st["goal_diff"],
         away_st["goal_diff"],
         h2h_hw,
         h2h_aw,
         h2h_d,
+        home_sc["home_scorer_goals"],
+        away_sc["away_scorer_goals"],
     ]]
     features_scaled = scaler.transform(features)
     proba = model.predict_proba(features_scaled)[0]
